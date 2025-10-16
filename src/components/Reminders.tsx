@@ -20,6 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { showError, showSuccess } from "@/utils/toast";
+import { cpapMachines, MachinePart } from "@/data/machines";
 
 interface Reminder {
   id: string;
@@ -43,6 +44,8 @@ const Reminders = () => {
   const [editingReminderId, setEditingReminderId] = useState<string | null>(
     null,
   );
+  const [parts, setParts] = useState<MachinePart[]>([]);
+  const [selectedPart, setSelectedPart] = useState("");
 
   if (!isSupabaseConfigured) {
     return (
@@ -88,6 +91,30 @@ const Reminders = () => {
     setNewReminder({ machine: "", date: "", message: "" });
     setIsEditing(false);
     setEditingReminderId(null);
+    setParts([]);
+    setSelectedPart("");
+  };
+
+  const handleMachineChange = (machineName: string) => {
+    const selectedMachine = cpapMachines.find((m) => m.name === machineName);
+    setNewReminder({
+      ...newReminder,
+      machine: machineName,
+      message: "", // Reset message
+    });
+    setParts(selectedMachine ? selectedMachine.parts : []);
+    setSelectedPart(""); // Reset part selection
+  };
+
+  const handlePartChange = (partName: string) => {
+    const selectedPartData = parts.find((p) => p.name === partName);
+    setSelectedPart(partName);
+    if (selectedPartData) {
+      setNewReminder({
+        ...newReminder,
+        message: selectedPartData.defaultMessage,
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -139,6 +166,11 @@ const Reminders = () => {
       date: reminder.date,
       message: reminder.message,
     });
+    const selectedMachine = cpapMachines.find(
+      (m) => m.name === reminder.machine,
+    );
+    setParts(selectedMachine ? selectedMachine.parts : []);
+    setSelectedPart("");
   };
 
   const deleteReminder = async (id: string) => {
@@ -160,9 +192,9 @@ const Reminders = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Reminders</CardTitle>
+          <CardTitle>Set a Reminder</CardTitle>
           <CardDescription>
-            Set and manage maintenance reminders for your CPAP equipment
+            Select your machine and part to create a new maintenance reminder.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -173,22 +205,38 @@ const Reminders = () => {
               </label>
               <Select
                 value={newReminder.machine}
-                onValueChange={(value) =>
-                  setNewReminder({ ...newReminder, machine: value })
-                }
+                onValueChange={handleMachineChange}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select machine" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Philips Respironics DreamStation">
-                    Philips Respironics DreamStation
-                  </SelectItem>
-                  <SelectItem value="Medtronic S90">Medtronic S90</SelectItem>
-                  <SelectItem value="ResMed S9">ResMed S9</SelectItem>
-                  <SelectItem value="Dual CPAP Machine">
-                    Dual CPAP Machine
-                  </SelectItem>
+                  {cpapMachines.map((machine) => (
+                    <SelectItem key={machine.name} value={machine.name}>
+                      {machine.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Part for Maintenance
+              </label>
+              <Select
+                value={selectedPart}
+                onValueChange={handlePartChange}
+                disabled={!newReminder.machine || isEditing}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select part" />
+                </SelectTrigger>
+                <SelectContent>
+                  {parts.map((part) => (
+                    <SelectItem key={part.name} value={part.name}>
+                      {part.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
