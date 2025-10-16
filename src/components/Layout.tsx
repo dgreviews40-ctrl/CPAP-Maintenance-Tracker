@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 const Layout = ({ children }: PropsWithChildren) => {
   return (
     <TooltipProvider>
-      <main className="min-h-screen bg-background font-sans antialiased">
+      <main className="min-h-screen font-sans antialiased">
         {children}
       </main>
       <Toaster />
