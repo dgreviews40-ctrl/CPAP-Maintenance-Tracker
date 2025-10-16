@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MaintenanceEntry } from "./MaintenanceTracker";
 import { MachineCombobox } from "./MachineCombobox";
+import { PartCombobox } from "./PartCombobox";
+import { cpapMachines } from "@/data/cpap-machines";
 
 interface MaintenanceFormProps {
   onAddEntry: (entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => Promise<boolean>;
@@ -14,20 +16,34 @@ interface MaintenanceFormProps {
 
 const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
   const [machine, setMachine] = useState("");
+  const [part, setPart] = useState("");
+  const [availableParts, setAvailableParts] = useState<{value: string, label: string}[]>([]);
   const [lastMaintenance, setLastMaintenance] = useState("");
   const [nextMaintenance, setNextMaintenance] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleMachineChange = (selectedLabel: string) => {
+    setMachine(selectedLabel);
+    const machineData = cpapMachines.find(m => m.label === selectedLabel);
+    
+    if (machineData) {
+      setAvailableParts(machineData.parts);
+    } else {
+      setAvailableParts([]);
+    }
+    setPart(""); // Reset part selection when machine changes
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!machine || !lastMaintenance || !nextMaintenance) {
-      alert("Please fill out all required fields.");
+    if (!machine || !part || !lastMaintenance || !nextMaintenance) {
+      alert("Please fill out all required fields, including machine and part.");
       return;
     }
     setIsSubmitting(true);
     const success = await onAddEntry({
-      machine,
+      machine: `${machine} - ${part}`,
       last_maintenance: lastMaintenance,
       next_maintenance: nextMaintenance,
       notes,
@@ -36,6 +52,8 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
     if (success) {
       // Clear form
       setMachine("");
+      setPart("");
+      setAvailableParts([]);
       setLastMaintenance("");
       setNextMaintenance("");
       setNotes("");
@@ -48,7 +66,16 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="machine">Machine Name</Label>
-          <MachineCombobox value={machine} onChange={setMachine} />
+          <MachineCombobox value={machine} onChange={handleMachineChange} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="part">Part</Label>
+          <PartCombobox 
+            value={part} 
+            onChange={setPart} 
+            parts={availableParts} 
+            disabled={!machine} 
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="last_maintenance">Last Maintenance Date</Label>
@@ -71,7 +98,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
           />
         </div>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2 col-span-1 md:col-span-2">
         <Label htmlFor="notes">Notes</Label>
         <Textarea
           id="notes"
