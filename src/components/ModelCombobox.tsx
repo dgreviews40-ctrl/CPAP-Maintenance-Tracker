@@ -19,20 +19,20 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-interface Part {
+interface Model {
   value: string;
   label: string;
-  models: { value: string; label: string; reorder_info: string }[];
+  reorder_info: string;
 }
 
-interface PartComboboxProps {
+interface ModelComboboxProps {
   value: string;
   onChange: (value: string) => void;
-  parts: Part[];
+  models: Model[];
   disabled?: boolean;
 }
 
-export function PartCombobox({ value, onChange, parts, disabled = false }: PartComboboxProps) {
+export function ModelCombobox({ value, onChange, models, disabled = false }: ModelComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
   return (
@@ -46,21 +46,21 @@ export function PartCombobox({ value, onChange, parts, disabled = false }: PartC
           disabled={disabled}
         >
           {value
-            ? parts.find((part) => part.label === value)?.label
-            : "Select part type..."}
+            ? models.find((model) => model.label === value)?.label
+            : "Select model..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
-          <CommandInput placeholder="Search part type..." />
+          <CommandInput placeholder="Search model..." />
           <CommandList>
-            <CommandEmpty>No part type found.</CommandEmpty>
+            <CommandEmpty>No model found.</CommandEmpty>
             <CommandGroup>
-              {parts.map((part) => (
+              {models.map((model) => (
                 <CommandItem
-                  key={part.value}
-                  value={part.label}
+                  key={model.value}
+                  value={model.label}
                   onSelect={(currentValue) => {
                     onChange(currentValue === value ? "" : currentValue)
                     setOpen(false)
@@ -69,10 +69,13 @@ export function PartCombobox({ value, onChange, parts, disabled = false }: PartC
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === part.label ? "opacity-100" : "opacity-0"
+                      value === model.label ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {part.label}
+                  <div className="flex flex-col items-start">
+                    <span>{model.label}</span>
+                    <span className="text-xs text-muted-foreground">SKU: {model.reorder_info}</span>
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>
