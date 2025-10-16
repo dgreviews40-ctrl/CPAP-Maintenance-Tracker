@@ -6,12 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-
+import { supabase } from "@/lib/supabase";
+import { showError, showSuccess } from "@/utils/toast";
 
 interface Reminder {
   id: string;
   machine: string;
-  date: Date;
+  date: string;
   message: string;
 }
 
@@ -23,69 +24,96 @@ const Reminders = () => {
     message: ""
   });
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+  const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const savedReminders = localStorage.getItem("cpapReminders");
-    if (savedReminders) {
-      try {
-        const parsedReminders = JSON.parse(savedReminders).map((r: any) => ({...r, date: new Date(r.date)}));
-        setReminders(parsedReminders);
-      } catch (error) {
-        console.error("Failed to parse reminders from localStorage", error);
-        setReminders([]);
-      }
+  const fetchReminders = async () => {
+    const { data, error } = await supabase
+      .from("reminders")
+      .select("*")
+      .order("date", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching reminders:", error);
+      showError("Could not fetch reminders.");
+    } else {
+      setReminders(data as Reminder[]);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    localStorage.setItem("cpapReminders", JSON.stringify(reminders));
-  }, [reminders]);
+    fetchReminders();
+  }, []);
 
   const resetForm = () => {
     setNewReminder({ machine: "", date: "", message: "" });
     setIsEditing(false);
-    setEditingReminder(null);
+    setEditingReminderId(null);
   };
 
-  const handleSubmit = () => {
-    if (!newReminder.machine || !newReminder.date || !newReminder.message) return;
+  const handleSubmit = async () => {
+    if (!newReminder.machine || !newReminder.date || !newReminder.message) {
+        showError("Please fill in all fields.");
+        return;
+    }
 
-    if (isEditing && editingReminder) {
-      const updatedReminders = reminders.map(reminder => 
-        reminder.id === editingReminder.id ? { 
-          ...reminder, 
-          machine: newReminder.machine,
-          date: new Date(newReminder.date),
-          message: newReminder.message,
-        } : reminder
-      );
-      setReminders(updatedReminders);
+    const reminderData = {
+      machine: newReminder.machine,
+      date: newReminder.date,
+      message: newReminder.message,
+    };
+
+    if (isEditing && editingReminderId) {
+      const { error } = await supabase
+        .from("reminders")
+        .update(reminderData)
+        .eq("id", editingReminderId);
+
+      if (error) {
+        console.error("Error updating reminder:", error);
+        showError("Failed to save changes.");
+      } else {
+        showSuccess("Reminder updated!");
+        fetchReminders();
+      }
     } else {
-      const newReminderItem: Reminder = {
-        id: Date.now().toString(),
-        machine: newReminder.machine,
-        date: new Date(newReminder.date),
-        message: newReminder.message
-      };
-      setReminders([...reminders, newReminderItem]);
+      const { error } = await supabase
+        .from("reminders")
+        .insert([reminderData]);
+
+      if (error) {
+        console.error("Error adding reminder:", error);
+        showError("Failed to add new reminder.");
+      } else {
+        showSuccess("New reminder added!");
+        fetchReminders();
+      }
     }
     resetForm();
   };
 
   const handleEdit = (reminder: Reminder) => {
     setIsEditing(true);
-    setEditingReminder(reminder);
+    setEditingReminderId(reminder.id);
     setNewReminder({
       machine: reminder.machine,
-      date: reminder.date.toISOString().split('T')[0],
+      date: reminder.date,
       message: reminder.message,
     });
   };
 
-  const deleteReminder = (id: string) => {
-    const updatedReminders = reminders.filter(reminder => reminder.id !== id);
-    setReminders(updatedReminders);
+  const deleteReminder = async (id: string) => {
+    const { error } = await supabase
+      .from("reminders")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting reminder:", error);
+      showError("Failed to delete reminder.");
+    } else {
+      showSuccess("Reminder deleted.");
+      fetchReminders();
+    }
   };
 
   return (
@@ -162,7 +190,7 @@ const Reminders = () => {
                     <div>
                       <h3 className="font-medium">{reminder.machine}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Reminder Date: {reminder.date.toLocaleDateString()}
+                        Reminder Date: {new Date(reminder.date.replace(/-/g, '/')).toLocaleDateString()}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Message: {reminder.message}

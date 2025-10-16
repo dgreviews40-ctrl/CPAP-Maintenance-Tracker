@@ -7,12 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/lib/supabase";
+import { showError, showSuccess } from "@/utils/toast";
 
 interface MaintenanceEntry {
   id: string;
   machine: string;
-  lastMaintenance: Date;
-  nextMaintenance: Date;
+  last_maintenance: string;
+  next_maintenance: string;
   notes: string;
 }
 
@@ -26,26 +28,23 @@ const MaintenanceTracker = () => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const savedEntries = localStorage.getItem("cpapMaintenanceEntries");
-    if (savedEntries) {
-      try {
-        const parsedEntries = JSON.parse(savedEntries).map((e: any) => ({
-          ...e,
-          lastMaintenance: new Date(e.lastMaintenance),
-          nextMaintenance: new Date(e.nextMaintenance),
-        }));
-        setEntries(parsedEntries);
-      } catch (error) {
-        console.error("Failed to parse entries from localStorage", error);
-        setEntries([]);
-      }
+  const fetchEntries = async () => {
+    const { data, error } = await supabase
+      .from("maintenance_entries")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching maintenance entries:", error);
+      showError("Could not fetch maintenance records.");
+    } else {
+      setEntries(data as MaintenanceEntry[]);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    localStorage.setItem("cpapMaintenanceEntries", JSON.stringify(entries));
-  }, [entries]);
+    fetchEntries();
+  }, []);
 
   const resetForm = () => {
     setCurrentMachine("Philips Respironics DreamStation");
@@ -56,29 +55,44 @@ const MaintenanceTracker = () => {
     setEditingEntryId(null);
   };
 
-  const handleSubmit = () => {
-    if (!lastMaintenance || !nextMaintenance) return;
+  const handleSubmit = async () => {
+    if (!lastMaintenance || !nextMaintenance) {
+        showError("Please fill in both maintenance dates.");
+        return;
+    }
+
+    const entryData = {
+      machine: currentMachine,
+      last_maintenance: lastMaintenance,
+      next_maintenance: nextMaintenance,
+      notes: notes,
+    };
 
     if (isEditing && editingEntryId) {
-      const updatedEntries = entries.map(entry => 
-        entry.id === editingEntryId ? { 
-          ...entry, 
-          machine: currentMachine,
-          lastMaintenance: new Date(lastMaintenance),
-          nextMaintenance: new Date(nextMaintenance),
-          notes: notes,
-        } : entry
-      );
-      setEntries(updatedEntries);
+      const { error } = await supabase
+        .from("maintenance_entries")
+        .update(entryData)
+        .eq("id", editingEntryId);
+      
+      if (error) {
+        console.error("Error updating entry:", error);
+        showError("Failed to save changes.");
+      } else {
+        showSuccess("Maintenance record updated!");
+        fetchEntries();
+      }
     } else {
-      const newEntry: MaintenanceEntry = {
-        id: Date.now().toString(),
-        machine: currentMachine,
-        lastMaintenance: new Date(lastMaintenance),
-        nextMaintenance: new Date(nextMaintenance),
-        notes: notes || ""
-      };
-      setEntries([...entries, newEntry]);
+      const { error } = await supabase
+        .from("maintenance_entries")
+        .insert([entryData]);
+
+      if (error) {
+        console.error("Error adding entry:", error);
+        showError("Failed to add new record.");
+      } else {
+        showSuccess("New maintenance record added!");
+        fetchEntries();
+      }
     }
     resetForm();
   };
@@ -87,14 +101,24 @@ const MaintenanceTracker = () => {
     setIsEditing(true);
     setEditingEntryId(entry.id);
     setCurrentMachine(entry.machine);
-    setLastMaintenance(entry.lastMaintenance.toISOString().split('T')[0]);
-    setNextMaintenance(entry.nextMaintenance.toISOString().split('T')[0]);
+    setLastMaintenance(entry.last_maintenance);
+    setNextMaintenance(entry.next_maintenance);
     setNotes(entry.notes);
   };
 
-  const deleteEntry = (id: string) => {
-    const updatedEntries = entries.filter(entry => entry.id !== id);
-    setEntries(updatedEntries);
+  const deleteEntry = async (id: string) => {
+    const { error } = await supabase
+      .from("maintenance_entries")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting entry:", error);
+      showError("Failed to delete record.");
+    } else {
+      showSuccess("Maintenance record deleted.");
+      fetchEntries();
+    }
   };
 
   return (
@@ -172,10 +196,10 @@ const MaintenanceTracker = () => {
                     <div>
                       <h3 className="font-medium">{entry.machine}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Last Maintenance: {entry.lastMaintenance.toLocaleDateString()}
+                        Last Maintenance: {new Date(entry.last_maintenance.replace(/-/g, '/')).toLocaleDateString()}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Next Maintenance: {entry.nextMaintenance.toLocaleDateString()}
+                        Next Maintenance: {new Date(entry.next_maintenance.replace(/-/g, '/')).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex space-x-2">
