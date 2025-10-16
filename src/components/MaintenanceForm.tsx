@@ -61,29 +61,28 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
   const [availableParts, setAvailableParts] = useState<Part[]>([]);
   const [availableModels, setAvailableModels] = useState<{ value: string; label: string; reorder_info: string }[]>([]);
   const [lastMaintenance, setLastMaintenance] = useState(format(new Date(), 'yyyy-MM-dd')); // Default to today
+  const [customFrequency, setCustomFrequency] = useState<number | string>("");
   const [nextMaintenance, setNextMaintenance] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Calculate the effective frequency (custom overrides default)
+  const effectiveFrequencyDays = customFrequency 
+    ? Number(customFrequency) 
+    : getMaintenanceFrequencyDays(partType);
+
   // Effect to calculate next maintenance date automatically
   useEffect(() => {
-    if (lastMaintenance && partType) {
-      const frequencyDays = getMaintenanceFrequencyDays(partType);
-      
-      if (frequencyDays !== null) {
-        // Use Date object from the input string (handle potential timezone issues by replacing hyphens)
-        const lastDate = new Date(lastMaintenance.replace(/-/g, "/"));
-        const nextDate = addDays(lastDate, frequencyDays);
-        setNextMaintenance(format(nextDate, 'yyyy-MM-dd'));
-      } else {
-        // If frequency is unknown, clear the next maintenance date
-        setNextMaintenance("");
-      }
+    if (lastMaintenance && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0) {
+      // Use Date object from the input string (handle potential timezone issues by replacing hyphens)
+      const lastDate = new Date(lastMaintenance.replace(/-/g, "/"));
+      const nextDate = addDays(lastDate, effectiveFrequencyDays);
+      setNextMaintenance(format(nextDate, 'yyyy-MM-dd'));
     } else if (lastMaintenance) {
-      // If last maintenance is set but part type is not, clear next maintenance
+      // If last maintenance is set but frequency is unknown/invalid, clear next maintenance
       setNextMaintenance("");
     }
-  }, [lastMaintenance, partType]);
+  }, [lastMaintenance, partType, customFrequency, effectiveFrequencyDays]);
 
 
   const handleMachineChange = (selectedLabel: string) => {
@@ -98,6 +97,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
     setPartType(""); // Reset part type
     setPartModel(""); // Reset part model
     setAvailableModels([]);
+    setCustomFrequency(""); // Reset custom frequency
   };
 
   const handlePartTypeChange = (selectedLabel: string) => {
@@ -110,6 +110,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
       setAvailableModels([]);
     }
     setPartModel(""); // Reset part model
+    setCustomFrequency(""); // Reset custom frequency
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,7 +128,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
       machine: `${machine} - ${partType} - ${partModel}${reorderInfo}`,
       last_maintenance: lastMaintenance,
       next_maintenance: nextMaintenance,
-      notes,
+      notes: notes + (customFrequency ? ` [Custom Frequency: ${customFrequency} days]` : ''),
     });
 
     if (success) {
@@ -138,10 +139,13 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
       setAvailableParts([]);
       setAvailableModels([]);
       setNextMaintenance("");
+      setCustomFrequency("");
       setNotes("");
     }
     setIsSubmitting(false);
   };
+
+  const defaultFrequency = getMaintenanceFrequencyDays(partType);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mb-8 p-4 border rounded-lg">
@@ -169,7 +173,8 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
           />
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="last_maintenance">Last Maintenance Date</Label>
           <Input
@@ -181,6 +186,22 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="custom_frequency">Custom Frequency (Days)</Label>
+          <Input
+            id="custom_frequency"
+            type="number"
+            placeholder={defaultFrequency ? `Default: ${defaultFrequency} days` : "Enter days (optional)"}
+            value={customFrequency}
+            onChange={(e) => setCustomFrequency(e.target.value ? Number(e.target.value) : "")}
+            min="1"
+          />
+          {defaultFrequency !== null && !customFrequency && (
+            <p className="text-xs text-muted-foreground">
+              Using standard frequency: {defaultFrequency} days.
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="next_maintenance">Next Maintenance Date</Label>
           <Input
             id="next_maintenance"
@@ -189,16 +210,17 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
             onChange={(e) => setNextMaintenance(e.target.value)}
             required
             // Disable manual input if we successfully calculated a date
-            disabled={!!nextMaintenance && getMaintenanceFrequencyDays(partType) !== null}
-            className={nextMaintenance && getMaintenanceFrequencyDays(partType) !== null ? "bg-muted/50" : ""}
+            disabled={!!nextMaintenance && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0}
+            className={nextMaintenance && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0 ? "bg-muted/50" : ""}
           />
-          {nextMaintenance && getMaintenanceFrequencyDays(partType) !== null && (
+          {nextMaintenance && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0 && (
             <p className="text-xs text-muted-foreground">
-              Automatically calculated based on standard {partType} replacement schedule.
+              Calculated based on {effectiveFrequencyDays} days.
             </p>
           )}
         </div>
       </div>
+      
       <div className="space-y-2 col-span-1 md:col-span-3">
         <Label htmlFor="notes">Notes</Label>
         <Textarea

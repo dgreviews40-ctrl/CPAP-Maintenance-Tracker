@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -9,7 +9,11 @@ import {
 } from "@/components/ui/card";
 import MaintenanceList from "./MaintenanceList";
 import MaintenanceForm from "./MaintenanceForm";
+import DashboardSummary from "./DashboardSummary";
+import NotificationPermission from "./NotificationPermission";
 import { supabase } from "@/lib/supabase";
+import { isBefore, addDays, startOfDay } from "date-fns";
+import { showSuccess, showError } from "@/utils/toast";
 
 export type MaintenanceEntry = {
   id: string;
@@ -23,6 +27,44 @@ export type MaintenanceEntry = {
 const MaintenanceTracker = () => {
   const [entries, setEntries] = useState<MaintenanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+
+  const checkAndNotify = useCallback((data: MaintenanceEntry[]) => {
+    if (notificationPermission !== 'granted') return;
+
+    const today = startOfDay(new Date());
+    const sevenDaysFromNow = addDays(today, 7);
+    
+    let overdueCount = 0;
+    let dueSoonCount = 0;
+
+    data.forEach((entry) => {
+      // Handle timezone issues by replacing hyphens with slashes
+      const nextMaintenanceDate = startOfDay(
+        new Date(entry.next_maintenance.replace(/-/g, "/")),
+      );
+
+      if (isBefore(nextMaintenanceDate, today)) {
+        overdueCount++;
+      } else if (
+        isBefore(nextMaintenanceDate, sevenDaysFromNow)
+      ) {
+        dueSoonCount++;
+      }
+    });
+
+    if (overdueCount > 0) {
+      new Notification("🚨 Maintenance Overdue!", {
+        body: `You have ${overdueCount} item(s) that are past their maintenance date.`,
+        icon: "/favicon.ico",
+      });
+    } else if (dueSoonCount > 0) {
+      new Notification("⚠️ Maintenance Due Soon", {
+        body: `You have ${dueSoonCount} item(s) due for maintenance in the next 7 days.`,
+        icon: "/favicon.ico",
+      });
+    }
+  }, [notificationPermission]);
 
   const fetchEntries = async () => {
     setLoading(true);
@@ -33,9 +75,12 @@ const MaintenanceTracker = () => {
 
     if (error) {
       console.error("Error fetching entries:", error);
+      showError("Failed to load maintenance entries.");
       setEntries([]);
     } else {
-      setEntries(data || []);
+      const fetchedEntries = data || [];
+      setEntries(fetchedEntries);
+      checkAndNotify(fetchedEntries as MaintenanceEntry[]);
     }
     setLoading(false);
   };
@@ -51,9 +96,11 @@ const MaintenanceTracker = () => {
 
     if (error) {
       console.error("Error adding entry:", error);
+      showError("Failed to add maintenance entry.");
       return false;
     }
     
+    showSuccess("Maintenance entry added successfully!");
     fetchEntries();
     return true;
   };
@@ -66,7 +113,9 @@ const MaintenanceTracker = () => {
 
     if (error) {
       console.error("Error deleting entry:", error);
+      showError("Failed to delete maintenance entry.");
     } else {
+      showSuccess("Entry deleted.");
       setEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
     }
   };
@@ -77,6 +126,8 @@ const MaintenanceTracker = () => {
         <CardTitle>Maintenance Tracker</CardTitle>
       </CardHeader>
       <CardContent>
+        <NotificationPermission onPermissionChange={setNotificationPermission} />
+        <DashboardSummary />
         <MaintenanceForm onAddEntry={addEntry} />
         <MaintenanceList entries={entries} onDeleteEntry={deleteEntry} loading={loading} />
       </CardContent>
