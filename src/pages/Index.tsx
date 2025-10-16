@@ -3,7 +3,6 @@
 import Layout from "@/components/Layout";
 import MachineList from "@/components/MachineList";
 import MaintenanceTracker from "@/components/MaintenanceTracker";
-import Reminders from "@/components/Reminders";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import DashboardSummary from "@/components/DashboardSummary";
 
@@ -37,9 +36,8 @@ const Index = () => {
             <h2 className="text-2xl font-semibold mb-4">Dashboard Overview</h2>
             <DashboardSummary />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div>
             <MaintenanceTracker />
-            <Reminders />
           </div>
           <div>
             <h2 className="text-2xl font-semibold mb-4">Popular Machines</h2>
