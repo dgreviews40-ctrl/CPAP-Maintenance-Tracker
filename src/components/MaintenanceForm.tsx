@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MaintenanceEntry } from "./MaintenanceTracker";
+import { MachineCombobox } from "./MachineCombobox";
 
 interface MaintenanceFormProps {
   onAddEntry: (entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => Promise<boolean>;
@@ -47,13 +48,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="machine">Machine Name</Label>
-          <Input
-            id="machine"
-            value={machine}
-            onChange={(e) => setMachine(e.target.value)}
-            placeholder="e.g., CNC Mill"
-            required
-          />
+          <MachineCombobox value={machine} onChange={setMachine} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="last_maintenance">Last Maintenance Date</Label>
