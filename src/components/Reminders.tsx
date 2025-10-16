@@ -2,11 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { showError, showSuccess } from "@/utils/toast";
 
 interface Reminder {
@@ -18,16 +30,44 @@ interface Reminder {
 
 const Reminders = () => {
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [newReminder, setNewReminder] = useState<{ machine: string; date: string; message: string }>({
+  const [newReminder, setNewReminder] = useState<{
+    machine: string;
+    date: string;
+    message: string;
+  }>({
     machine: "",
     date: "",
-    message: ""
+    message: "",
   });
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
+  const [editingReminderId, setEditingReminderId] = useState<string | null>(
+    null,
+  );
+
+  if (!isSupabaseConfigured) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Reminders</CardTitle>
+          <CardDescription>
+            Set and manage maintenance reminders for your CPAP equipment
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-red-600 p-4 border border-red-200 bg-red-50 rounded-md">
+            <p className="font-bold">Supabase Not Configured</p>
+            <p className="text-sm">
+              Please ensure your Supabase URL and Key are set in your
+              environment variables.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const fetchReminders = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from("reminders")
       .select("*")
       .order("date", { ascending: true });
@@ -52,8 +92,8 @@ const Reminders = () => {
 
   const handleSubmit = async () => {
     if (!newReminder.machine || !newReminder.date || !newReminder.message) {
-        showError("Please fill in all fields.");
-        return;
+      showError("Please fill in all fields.");
+      return;
     }
 
     const reminderData = {
@@ -63,7 +103,7 @@ const Reminders = () => {
     };
 
     if (isEditing && editingReminderId) {
-      const { error } = await supabase
+      const { error } = await supabase!
         .from("reminders")
         .update(reminderData)
         .eq("id", editingReminderId);
@@ -76,7 +116,7 @@ const Reminders = () => {
         fetchReminders();
       }
     } else {
-      const { error } = await supabase
+      const { error } = await supabase!
         .from("reminders")
         .insert([reminderData]);
 
@@ -102,7 +142,7 @@ const Reminders = () => {
   };
 
   const deleteReminder = async (id: string) => {
-    const { error } = await supabase
+    const { error } = await supabase!
       .from("reminders")
       .delete()
       .eq("id", id);
@@ -121,13 +161,22 @@ const Reminders = () => {
       <Card>
         <CardHeader>
           <CardTitle>Reminders</CardTitle>
-          <CardDescription>Set and manage maintenance reminders for your CPAP equipment</CardDescription>
+          <CardDescription>
+            Set and manage maintenance reminders for your CPAP equipment
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Machine</label>
-              <Select value={newReminder.machine} onValueChange={(value) => setNewReminder({ ...newReminder, machine: value })}>
+              <label className="text-sm font-medium text-muted-foreground">
+                Machine
+              </label>
+              <Select
+                value={newReminder.machine}
+                onValueChange={(value) =>
+                  setNewReminder({ ...newReminder, machine: value })
+                }
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select machine" />
                 </SelectTrigger>
@@ -135,12 +184,8 @@ const Reminders = () => {
                   <SelectItem value="Philips Respironics DreamStation">
                     Philips Respironics DreamStation
                   </SelectItem>
-                  <SelectItem value="Medtronic S90">
-                    Medtronic S90
-                  </SelectItem>
-                  <SelectItem value="ResMed S9">
-                    ResMed S9
-                  </SelectItem>
+                  <SelectItem value="Medtronic S90">Medtronic S90</SelectItem>
+                  <SelectItem value="ResMed S9">ResMed S9</SelectItem>
                   <SelectItem value="Dual CPAP Machine">
                     Dual CPAP Machine
                   </SelectItem>
@@ -148,18 +193,26 @@ const Reminders = () => {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Date</label>
-              <Input 
-                type="date" 
-                value={newReminder.date} 
-                onChange={(e) => setNewReminder({ ...newReminder, date: e.target.value })}
+              <label className="text-sm font-medium text-muted-foreground">
+                Date
+              </label>
+              <Input
+                type="date"
+                value={newReminder.date}
+                onChange={(e) =>
+                  setNewReminder({ ...newReminder, date: e.target.value })
+                }
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Message</label>
-              <Input 
-                value={newReminder.message} 
-                onChange={(e) => setNewReminder({ ...newReminder, message: e.target.value })}
+              <label className="text-sm font-medium text-muted-foreground">
+                Message
+              </label>
+              <Input
+                value={newReminder.message}
+                onChange={(e) =>
+                  setNewReminder({ ...newReminder, message: e.target.value })
+                }
                 placeholder="e.g., Change filter"
               />
             </div>
@@ -168,21 +221,29 @@ const Reminders = () => {
             <Button onClick={handleSubmit}>
               {isEditing ? "Save Changes" : "Add Reminder"}
             </Button>
-             {isEditing && <Button variant="ghost" onClick={resetForm} className="ml-2">Cancel</Button>}
+            {isEditing && (
+              <Button variant="ghost" onClick={resetForm} className="ml-2">
+                Cancel
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Upcoming Reminders</CardTitle>
-          <CardDescription>View and manage your CPAP maintenance reminders</CardDescription>
+          <CardDescription>
+            View and manage your CPAP maintenance reminders
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Separator />
           <div className="space-y-4 mt-4">
             {reminders.length === 0 ? (
-              <p className="text-center text-muted-foreground">No reminders found</p>
+              <p className="text-center text-muted-foreground">
+                No reminders found
+              </p>
             ) : (
               reminders.map((reminder) => (
                 <div key={reminder.id} className="p-4 border rounded-lg">
@@ -190,17 +251,28 @@ const Reminders = () => {
                     <div>
                       <h3 className="font-medium">{reminder.machine}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Reminder Date: {new Date(reminder.date.replace(/-/g, '/')).toLocaleDateString()}
+                        Reminder Date:{" "}
+                        {new Date(
+                          reminder.date.replace(/-/g, "/"),
+                        ).toLocaleDateString()}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Message: {reminder.message}
                       </p>
                     </div>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(reminder)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(reminder)}
+                      >
                         Edit
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => deleteReminder(reminder.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteReminder(reminder.id)}
+                      >
                         Delete
                       </Button>
                     </div>
