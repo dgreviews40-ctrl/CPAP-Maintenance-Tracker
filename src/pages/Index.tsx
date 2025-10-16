@@ -1,6 +1,6 @@
 "use client";
 
-import { Layout } from "@/components/ui/layout";
+import Layout from "@/components/Layout";
 import MachineList from "@/components/MachineList";
 import MaintenanceTracker from "@/components/MaintenanceTracker";
 import Reminders from "@/components/Reminders";
