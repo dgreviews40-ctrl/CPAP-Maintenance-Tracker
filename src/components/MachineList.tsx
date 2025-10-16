@@ -32,7 +32,7 @@ const MachineList = ({ machines = [] }: MachineListProps) => {
               <img
                 src={machine.image}
                 alt={machine.name}
-                className="w-full h-full object-contain p-2"
+                className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null; // prevent infinite loop
