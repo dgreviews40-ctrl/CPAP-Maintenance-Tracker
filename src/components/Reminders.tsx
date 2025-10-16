@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 
 interface Reminder {
@@ -23,7 +28,13 @@ const Reminders = () => {
   useEffect(() => {
     const savedReminders = localStorage.getItem("cpapReminders");
     if (savedReminders) {
-      setReminders(JSON.parse(savedReminders));
+      try {
+        const parsedReminders = JSON.parse(savedReminders).map((r: any) => ({...r, date: new Date(r.date)}));
+        setReminders(parsedReminders);
+      } catch (error) {
+        console.error("Failed to parse reminders from localStorage", error);
+        setReminders([]);
+      }
     }
   }, []);
 
@@ -31,36 +42,45 @@ const Reminders = () => {
     localStorage.setItem("cpapReminders", JSON.stringify(reminders));
   }, [reminders]);
 
-  const addReminder = () => {
-    if (!newReminder.machine || !newReminder.date || !newReminder.message) return;
-    
-    const newReminderItem: Reminder = {
-      id: Date.now().toString(),
-      machine: newReminder.machine,
-      date: new Date(newReminder.date),
-      message: newReminder.message
-    };
-    
-    setReminders([...reminders, newReminderItem]);
+  const resetForm = () => {
     setNewReminder({ machine: "", date: "", message: "" });
     setIsEditing(false);
-  };
-
-  const editReminder = (reminder: Reminder) => {
-    setEditingReminder(reminder);
-    setIsEditing(true);
-  };
-
-  const saveEdit = () => {
-    if (!editingReminder) return;
-    
-    const updatedReminders = reminders.map(reminder => 
-      reminder.id === editingReminder.id ? { ...reminder, ...newReminder } : reminder
-    );
-    
-    setReminders(updatedReminders);
-    setIsEditing(false);
     setEditingReminder(null);
+  };
+
+  const handleSubmit = () => {
+    if (!newReminder.machine || !newReminder.date || !newReminder.message) return;
+
+    if (isEditing && editingReminder) {
+      const updatedReminders = reminders.map(reminder => 
+        reminder.id === editingReminder.id ? { 
+          ...reminder, 
+          machine: newReminder.machine,
+          date: new Date(newReminder.date),
+          message: newReminder.message,
+        } : reminder
+      );
+      setReminders(updatedReminders);
+    } else {
+      const newReminderItem: Reminder = {
+        id: Date.now().toString(),
+        machine: newReminder.machine,
+        date: new Date(newReminder.date),
+        message: newReminder.message
+      };
+      setReminders([...reminders, newReminderItem]);
+    }
+    resetForm();
+  };
+
+  const handleEdit = (reminder: Reminder) => {
+    setIsEditing(true);
+    setEditingReminder(reminder);
+    setNewReminder({
+      machine: reminder.machine,
+      date: reminder.date.toISOString().split('T')[0],
+      message: reminder.message,
+    });
   };
 
   const deleteReminder = (id: string) => {
@@ -76,7 +96,7 @@ const Reminders = () => {
           <CardDescription>Set and manage maintenance reminders for your CPAP equipment</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Machine</label>
               <Select value={newReminder.machine} onValueChange={(value) => setNewReminder({ ...newReminder, machine: value })}>
@@ -112,14 +132,15 @@ const Reminders = () => {
               <Input 
                 value={newReminder.message} 
                 onChange={(e) => setNewReminder({ ...newReminder, message: e.target.value })}
-                className="h-24"
+                placeholder="e.g., Change filter"
               />
             </div>
           </div>
-          <div className="flex justify-end">
-            <Button onClick={isEditing ? saveEdit : addReminder}>
+          <div className="flex justify-end pt-4">
+            <Button onClick={handleSubmit}>
               {isEditing ? "Save Changes" : "Add Reminder"}
             </Button>
+             {isEditing && <Button variant="ghost" onClick={resetForm} className="ml-2">Cancel</Button>}
           </div>
         </CardContent>
       </Card>
@@ -148,7 +169,7 @@ const Reminders = () => {
                       </p>
                     </div>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm" onClick={() => editReminder(reminder)}>
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(reminder)}>
                         Edit
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => deleteReminder(reminder.id)}>
