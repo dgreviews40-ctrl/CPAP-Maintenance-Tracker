@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { MachineCombobox } from "./MachineCombobox";
 import { PartCombobox } from "./PartCombobox";
 import { ModelCombobox } from "./ModelCombobox";
 import { cpapMachines } from "@/data/cpap-machines";
+import { addDays, format } from "date-fns";
 
 interface Part {
   value: string;
@@ -21,16 +22,69 @@ interface MaintenanceFormProps {
   onAddEntry: (entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => Promise<boolean>;
 }
 
+// Helper function to determine maintenance frequency in days
+const getMaintenanceFrequencyDays = (partTypeLabel: string): number | null => {
+  const lowerCaseLabel = partTypeLabel.toLowerCase();
+  
+  if (lowerCaseLabel.includes("filter")) {
+    // Differentiate between disposable (30 days) and reusable (90 days)
+    if (lowerCaseLabel.includes("disposable")) return 30;
+    if (lowerCaseLabel.includes("reusable")) return 90;
+    // Default filter replacement is often monthly
+    return 30; 
+  }
+  
+  if (lowerCaseLabel.includes("tubing") || lowerCaseLabel.includes("hose")) {
+    return 90; // Every 3 months
+  }
+  
+  if (lowerCaseLabel.includes("mask") || lowerCaseLabel.includes("cushion") || lowerCaseLabel.includes("pillow")) {
+    return 30; // Monthly replacement for mask components
+  }
+
+  if (lowerCaseLabel.includes("chamber") || lowerCaseLabel.includes("tank")) {
+    return 180; // Every 6 months
+  }
+
+  if (lowerCaseLabel.includes("headgear") || lowerCaseLabel.includes("frame")) {
+    return 180; // Every 6 months
+  }
+
+  // If no specific match, return null
+  return null;
+};
+
 const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
   const [machine, setMachine] = useState("");
   const [partType, setPartType] = useState("");
   const [partModel, setPartModel] = useState("");
   const [availableParts, setAvailableParts] = useState<Part[]>([]);
   const [availableModels, setAvailableModels] = useState<{ value: string; label: string; reorder_info: string }[]>([]);
-  const [lastMaintenance, setLastMaintenance] = useState("");
+  const [lastMaintenance, setLastMaintenance] = useState(format(new Date(), 'yyyy-MM-dd')); // Default to today
   const [nextMaintenance, setNextMaintenance] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Effect to calculate next maintenance date automatically
+  useEffect(() => {
+    if (lastMaintenance && partType) {
+      const frequencyDays = getMaintenanceFrequencyDays(partType);
+      
+      if (frequencyDays !== null) {
+        // Use Date object from the input string (handle potential timezone issues by replacing hyphens)
+        const lastDate = new Date(lastMaintenance.replace(/-/g, "/"));
+        const nextDate = addDays(lastDate, frequencyDays);
+        setNextMaintenance(format(nextDate, 'yyyy-MM-dd'));
+      } else {
+        // If frequency is unknown, clear the next maintenance date
+        setNextMaintenance("");
+      }
+    } else if (lastMaintenance) {
+      // If last maintenance is set but part type is not, clear next maintenance
+      setNextMaintenance("");
+    }
+  }, [lastMaintenance, partType]);
+
 
   const handleMachineChange = (selectedLabel: string) => {
     setMachine(selectedLabel);
@@ -77,13 +131,12 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
     });
 
     if (success) {
-      // Clear form
+      // Clear form, but keep lastMaintenance defaulted to today for convenience
       setMachine("");
       setPartType("");
       setPartModel("");
       setAvailableParts([]);
       setAvailableModels([]);
-      setLastMaintenance("");
       setNextMaintenance("");
       setNotes("");
     }
@@ -135,7 +188,15 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
             value={nextMaintenance}
             onChange={(e) => setNextMaintenance(e.target.value)}
             required
+            // Disable manual input if we successfully calculated a date
+            disabled={!!nextMaintenance && getMaintenanceFrequencyDays(partType) !== null}
+            className={nextMaintenance && getMaintenanceFrequencyDays(partType) !== null ? "bg-muted/50" : ""}
           />
+          {nextMaintenance && getMaintenanceFrequencyDays(partType) !== null && (
+            <p className="text-xs text-muted-foreground">
+              Automatically calculated based on standard {partType} replacement schedule.
+            </p>
+          )}
         </div>
       </div>
       <div className="space-y-2 col-span-1 md:col-span-3">
