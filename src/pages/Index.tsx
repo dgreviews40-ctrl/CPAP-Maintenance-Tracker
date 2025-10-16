@@ -11,19 +11,19 @@ const popularMachines = [
     id: 1,
     name: "Philips Respironics DreamStation",
     description: "A popular and reliable CPAP machine known for its sleek, user-friendly design.",
-    image: "https://www.cpapstore.eu/wp-content/uploads/2020/05/DreamStation-Auto-CPAP-with-Humidifier-and-Heated-Tube-2.jpg"
+    image: "https://placehold.co/400x300/e2e8f0/64748b?text=DreamStation"
   },
   {
     id: 2,
     name: "ResMed AirSense 10",
     description: "Features a built-in humidifier and advanced event detection for a comfortable experience.",
-    image: "https://www.resmed.de/wp-content/uploads/2021/03/airsense-10-autoset-silo-820x680-1.jpg"
+    image: "https://placehold.co/400x300/e2e8f0/64748b?text=AirSense+10"
   },
   {
     id: 3,
     name: "ResMed S9",
     description: "A versatile machine with advanced data tracking and Climate Control technology.",
-    image: "https://www.cpap.com/images/product/11463/resmed-s9-autoset-cpap-machine-heated-humidifier-and-climate-line-heated-tube.jpg"
+    image: "https://placehold.co/400x300/e2e8f0/64748b?text=ResMed+S9"
   }
 ];
 
