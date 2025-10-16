@@ -3,14 +3,18 @@
 import { PropsWithChildren } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import Header from "./Header";
 
 const Layout = ({ children }: PropsWithChildren) => {
   return (
     <TooltipProvider>
-      <main className="min-h-screen font-sans antialiased">
-        {children}
-      </main>
-      <Toaster />
+      <div className="min-h-screen flex flex-col font-sans antialiased">
+        <Header />
+        <main className="flex-grow">
+          {children}
+        </main>
+        <Toaster />
+      </div>
     </TooltipProvider>
   );
 };
