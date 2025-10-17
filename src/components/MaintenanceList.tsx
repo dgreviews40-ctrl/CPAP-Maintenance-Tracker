@@ -14,15 +14,23 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, MoreHorizontal } from "lucide-react";
 import { MaintenanceEntry } from "./MaintenanceTracker";
 import { cn } from "@/lib/utils";
 import { isBefore, isWithinInterval, addDays, startOfDay } from "date-fns";
+import MarkAsDoneButton from "./MarkAsDoneButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MaintenanceListProps {
   entries: MaintenanceEntry[];
   onDeleteEntry: (id: string) => void;
-  onEditEntry: (entry: MaintenanceEntry) => void; // New prop for editing
+  onEditEntry: (entry: MaintenanceEntry) => void;
+  onCompleteMaintenance: (id: string, newLastDate: string, newNextDate: string) => Promise<boolean>; // New prop
   loading: boolean;
 }
 
@@ -58,6 +66,7 @@ const MaintenanceList = ({
   entries,
   onDeleteEntry,
   onEditEntry,
+  onCompleteMaintenance,
   loading,
 }: MaintenanceListProps) => {
   if (loading) {
@@ -78,11 +87,11 @@ const MaintenanceList = ({
         <TableHeader>
           <TableRow>
             <TableHead className="w-[40px]">Status</TableHead>
-            <TableHead>Machine</TableHead>
+            <TableHead>Machine / Part</TableHead>
             <TableHead>Last Maintenance</TableHead>
             <TableHead>Next Maintenance</TableHead>
             <TableHead>Notes</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-right w-[150px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -102,7 +111,9 @@ const MaintenanceList = ({
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
-                <TableCell className="font-medium">{entry.machine}</TableCell>
+                <TableCell className="font-medium max-w-xs truncate">
+                  {entry.machine}
+                </TableCell>
                 <TableCell>
                   {new Date(
                     entry.last_maintenance.replace(/-/g, "/"),
@@ -116,23 +127,30 @@ const MaintenanceList = ({
                 <TableCell className="max-w-xs truncate">
                   {entry.notes}
                 </TableCell>
-                <TableCell className="text-right space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEditEntry(entry)}
-                    title="Edit Entry"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDeleteEntry(entry.id)}
-                    title="Delete Entry"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                <TableCell className="text-right space-x-1 flex items-center justify-end">
+                  <MarkAsDoneButton 
+                    entry={entry} 
+                    onComplete={onCompleteMaintenance} 
+                  />
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEditEntry(entry)}>
+                        <Pencil className="h-4 w-4 mr-2" /> Edit Entry
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onDeleteEntry(entry.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" /> Delete Entry
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             );

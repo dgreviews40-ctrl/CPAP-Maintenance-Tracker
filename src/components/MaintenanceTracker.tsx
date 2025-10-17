@@ -187,6 +187,32 @@ const MaintenanceTracker = () => {
     fetchEntries(); // Re-fetch to update list, dashboard summary, and chart
     return true;
   };
+  
+  const completeMaintenance = async (id: string, newLastDate: string, newNextDate: string): Promise<boolean> => {
+    if (!user) {
+      showError("You must be logged in to complete maintenance.");
+      return false;
+    }
+    
+    const { error } = await supabase
+      .from("maintenance_entries")
+      .update({
+        last_maintenance: newLastDate,
+        next_maintenance: newNextDate,
+        // Optionally update notes to reflect completion, but keeping existing notes for now
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error completing maintenance:", error);
+      showError("Failed to mark maintenance as complete.");
+      return false;
+    }
+
+    showSuccess("Maintenance marked as complete! Next due date recalculated.");
+    fetchEntries();
+    return true;
+  };
 
   const deleteEntry = async (id: string) => {
     if (!user) {
@@ -319,6 +345,7 @@ const MaintenanceTracker = () => {
             entries={filteredAndSortedEntries} 
             onDeleteEntry={deleteEntry} 
             onEditEntry={handleEdit} 
+            onCompleteMaintenance={completeMaintenance}
             loading={loading} 
           />
         </CardContent>
