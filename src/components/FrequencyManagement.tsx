@@ -54,7 +54,7 @@ const getMaintenanceFrequencyDays = (partTypeLabel: string): number | null => {
   return null;
 };
 
-const PartManagement = () => {
+const FrequencyManagement = () => {
   const [allParts, setAllParts] = useState<UniquePart[]>([]);
   const [customFrequencies, setCustomFrequencies] = useState<CustomFrequency>({});
   const [loading, setLoading] = useState(true);
@@ -124,12 +124,12 @@ const PartManagement = () => {
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Wrench className="h-5 w-5 mr-2" /> Part Management & Customization
+          <Wrench className="h-5 w-5 mr-2" /> Part Replacement Frequency Customization
         </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-muted-foreground mb-6">
-          Below is a list of all available CPAP parts. You can override the default replacement frequency (in days) for any part. This custom value will be used when adding new maintenance entries.
+          Below is a list of all available CPAP parts. you can override the default replacement frequency (in days) for any part. This custom value will be used when adding new maintenance entries.
         </p>
 
         <div className="space-y-6">
@@ -190,4 +190,4 @@ const PartManagement = () => {
   );
 };
 
-export default PartManagement;
+export default FrequencyManagement;
