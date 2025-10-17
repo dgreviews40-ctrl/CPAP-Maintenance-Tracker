@@ -22,6 +22,9 @@ interface MaintenanceFormProps {
   onAddEntry: (entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => Promise<boolean>;
 }
 
+// --- Frequency Helpers (Must match PartManagement.tsx) ---
+const LOCAL_STORAGE_KEY = "cpap_custom_frequencies";
+
 // Helper function to determine maintenance frequency in days
 const getMaintenanceFrequencyDays = (partTypeLabel: string): number | null => {
   const lowerCaseLabel = partTypeLabel.toLowerCase();
@@ -54,6 +57,26 @@ const getMaintenanceFrequencyDays = (partTypeLabel: string): number | null => {
   return null;
 };
 
+// Helper to get custom frequency from local storage
+const getCustomFrequency = (machineLabel: string, partTypeLabel: string, partModelLabel: string): number | null => {
+  try {
+    const storedFrequencies = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (storedFrequencies) {
+      const frequencies = JSON.parse(storedFrequencies);
+      const uniqueKey = `${machineLabel}|${partTypeLabel}|${partModelLabel}`;
+      const customDays = frequencies[uniqueKey];
+      if (customDays && Number(customDays) > 0) {
+        return Number(customDays);
+      }
+    }
+  } catch (e) {
+    console.error("Error reading custom frequency from local storage:", e);
+  }
+  return null;
+};
+// --- End Frequency Helpers ---
+
+
 const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
   const [machine, setMachine] = useState("");
   const [partType, setPartType] = useState("");
@@ -61,15 +84,19 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
   const [availableParts, setAvailableParts] = useState<Part[]>([]);
   const [availableModels, setAvailableModels] = useState<{ value: string; label: string; reorder_info: string }[]>([]);
   const [lastMaintenance, setLastMaintenance] = useState(format(new Date(), 'yyyy-MM-dd')); // Default to today
-  const [customFrequency, setCustomFrequency] = useState<number | string>("");
+  const [customFrequencyInput, setCustomFrequencyInput] = useState<number | string>("");
   const [nextMaintenance, setNextMaintenance] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate the effective frequency (custom overrides default)
-  const effectiveFrequencyDays = customFrequency 
-    ? Number(customFrequency) 
-    : getMaintenanceFrequencyDays(partType);
+  // Determine the base frequency (default or custom from Part Management)
+  const defaultFrequency = getMaintenanceFrequencyDays(partType);
+  const customFrequencyFromStorage = getCustomFrequency(machine, partType, partModel);
+  
+  // Calculate the effective frequency (custom input overrides storage, which overrides default)
+  const effectiveFrequencyDays = customFrequencyInput 
+    ? Number(customFrequencyInput) 
+    : (customFrequencyFromStorage || defaultFrequency);
 
   // Effect to calculate next maintenance date automatically
   useEffect(() => {
@@ -82,7 +109,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
       // If last maintenance is set but frequency is unknown/invalid, clear next maintenance
       setNextMaintenance("");
     }
-  }, [lastMaintenance, partType, customFrequency, effectiveFrequencyDays]);
+  }, [lastMaintenance, partType, partModel, customFrequencyInput, effectiveFrequencyDays, machine, customFrequencyFromStorage]);
 
 
   const handleMachineChange = (selectedLabel: string) => {
@@ -97,7 +124,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
     setPartType(""); // Reset part type
     setPartModel(""); // Reset part model
     setAvailableModels([]);
-    setCustomFrequency(""); // Reset custom frequency
+    setCustomFrequencyInput(""); // Reset custom frequency input
   };
 
   const handlePartTypeChange = (selectedLabel: string) => {
@@ -110,8 +137,13 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
       setAvailableModels([]);
     }
     setPartModel(""); // Reset part model
-    setCustomFrequency(""); // Reset custom frequency
+    setCustomFrequencyInput(""); // Reset custom frequency input
   };
+
+  const handlePartModelChange = (selectedLabel: string) => {
+    setPartModel(selectedLabel);
+    setCustomFrequencyInput(""); // Reset custom frequency input
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,11 +156,21 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
     const reorderInfo = selectedModel ? ` (SKU: ${selectedModel.reorder_info})` : '';
 
     setIsSubmitting(true);
+    
+    let finalNotes = notes;
+    if (customFrequencyInput) {
+      finalNotes += ` [Form Custom Frequency: ${customFrequencyInput} days]`;
+    } else if (customFrequencyFromStorage) {
+      finalNotes += ` [Part Management Custom Frequency: ${customFrequencyFromStorage} days]`;
+    } else if (defaultFrequency) {
+      finalNotes += ` [Default Frequency: ${defaultFrequency} days]`;
+    }
+
     const success = await onAddEntry({
       machine: `${machine} - ${partType} - ${partModel}${reorderInfo}`,
       last_maintenance: lastMaintenance,
       next_maintenance: nextMaintenance,
-      notes: notes + (customFrequency ? ` [Custom Frequency: ${customFrequency} days]` : ''),
+      notes: finalNotes,
     });
 
     if (success) {
@@ -139,13 +181,15 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
       setAvailableParts([]);
       setAvailableModels([]);
       setNextMaintenance("");
-      setCustomFrequency("");
+      setCustomFrequencyInput("");
       setNotes("");
     }
     setIsSubmitting(false);
   };
 
-  const defaultFrequency = getMaintenanceFrequencyDays(partType);
+  const placeholderFrequency = customFrequencyFromStorage 
+    ? `Custom: ${customFrequencyFromStorage} days` 
+    : (defaultFrequency ? `Default: ${defaultFrequency} days` : "Enter days (optional)");
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mb-8 p-4 border rounded-lg">
@@ -167,7 +211,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
           <Label htmlFor="model">Part Model</Label>
           <ModelCombobox 
             value={partModel} 
-            onChange={setPartModel} 
+            onChange={handlePartModelChange} 
             models={availableModels} 
             disabled={!partType || availableModels.length === 0} 
           />
@@ -190,14 +234,14 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
           <Input
             id="custom_frequency"
             type="number"
-            placeholder={defaultFrequency ? `Default: ${defaultFrequency} days` : "Enter days (optional)"}
-            value={customFrequency}
-            onChange={(e) => setCustomFrequency(e.target.value ? Number(e.target.value) : "")}
+            placeholder={placeholderFrequency}
+            value={customFrequencyInput}
+            onChange={(e) => setCustomFrequencyInput(e.target.value ? Number(e.target.value) : "")}
             min="1"
           />
-          {defaultFrequency !== null && !customFrequency && (
+          {effectiveFrequencyDays !== null && effectiveFrequencyDays > 0 && (
             <p className="text-xs text-muted-foreground">
-              Using standard frequency: {defaultFrequency} days.
+              Using frequency: {effectiveFrequencyDays} days.
             </p>
           )}
         </div>
