@@ -25,6 +25,34 @@ interface MaintenanceListProps {
   loading: boolean;
 }
 
+// Helper function to determine the status of an entry (copied for local use/display)
+const getStatus = (
+  dateStr: string,
+): { label: string; color: string } => {
+  const today = startOfDay(new Date());
+  // Handle timezone issues by replacing hyphens with slashes
+  const nextMaintenanceDate = startOfDay(
+    new Date(dateStr.replace(/-/g, "/")),
+  );
+
+  if (isBefore(nextMaintenanceDate, today)) {
+    return { label: "Overdue", color: "bg-red-500" };
+  }
+
+  const sevenDaysFromNow = addDays(today, 7);
+  if (
+    isWithinInterval(nextMaintenanceDate, {
+      start: today,
+      end: sevenDaysFromNow,
+    })
+  ) {
+    return { label: "Due Soon", color: "bg-yellow-500" };
+  }
+
+  return { label: "On Schedule", color: "bg-green-500" };
+};
+
+
 const MaintenanceList = ({
   entries,
   onDeleteEntry,
@@ -37,36 +65,10 @@ const MaintenanceList = ({
   if (entries.length === 0) {
     return (
       <p className="text-center text-gray-500">
-        No maintenance entries yet. Add one above!
+        No maintenance entries match the current filter/sort criteria.
       </p>
     );
   }
-
-  const getStatus = (
-    dateStr: string,
-  ): { label: string; color: string } => {
-    const today = startOfDay(new Date());
-    // Handle timezone issues by replacing hyphens with slashes
-    const nextMaintenanceDate = startOfDay(
-      new Date(dateStr.replace(/-/g, "/")),
-    );
-
-    if (isBefore(nextMaintenanceDate, today)) {
-      return { label: "Overdue", color: "bg-red-500" };
-    }
-
-    const sevenDaysFromNow = addDays(today, 7);
-    if (
-      isWithinInterval(nextMaintenanceDate, {
-        start: today,
-        end: sevenDaysFromNow,
-      })
-    ) {
-      return { label: "Due Soon", color: "bg-yellow-500" };
-    }
-
-    return { label: "On Schedule", color: "bg-green-500" };
-  };
 
   return (
     <div className="border rounded-lg">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -11,8 +11,9 @@ import MaintenanceList from "./MaintenanceList";
 import MaintenanceForm from "./MaintenanceForm";
 import DashboardSummary from "./DashboardSummary";
 import NotificationPermission from "./NotificationPermission";
+import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, MaintenanceSortOrder } from "./MaintenanceControls";
 import { supabase } from "@/lib/supabase";
-import { isBefore, addDays, startOfDay } from "date-fns";
+import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
 
 export type MaintenanceEntry = {
@@ -24,10 +25,41 @@ export type MaintenanceEntry = {
   created_at: string;
 };
 
+// Helper function to determine the status of an entry
+const getEntryStatus = (dateStr: string): MaintenanceFilter => {
+  const today = startOfDay(new Date());
+  const nextMaintenanceDate = startOfDay(
+    new Date(dateStr.replace(/-/g, "/")),
+  );
+
+  if (isBefore(nextMaintenanceDate, today)) {
+    return "overdue";
+  }
+
+  const sevenDaysFromNow = addDays(today, 7);
+  if (
+    isWithinInterval(nextMaintenanceDate, {
+      start: today,
+      end: sevenDaysFromNow,
+    })
+  ) {
+    return "due_soon";
+  }
+
+  return "on_schedule";
+};
+
+
 const MaintenanceTracker = () => {
   const [entries, setEntries] = useState<MaintenanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  
+  // State for Controls
+  const [filter, setFilter] = useState<MaintenanceFilter>("all");
+  const [sortKey, setSortKey] = useState<MaintenanceSortKey>("next_maintenance");
+  const [sortOrder, setSortOrder] = useState<MaintenanceSortOrder>("asc");
+
 
   const checkAndNotify = useCallback((data: MaintenanceEntry[]) => {
     if (notificationPermission !== 'granted') return;
@@ -68,10 +100,11 @@ const MaintenanceTracker = () => {
 
   const fetchEntries = async () => {
     setLoading(true);
+    // We fetch all data and handle sorting/filtering client-side for simplicity and to avoid multiple DB calls for different views.
     const { data, error } = await supabase
       .from("maintenance_entries")
       .select("*")
-      .order("next_maintenance", { ascending: true });
+      .order("next_maintenance", { ascending: true }); // Default sort
 
     if (error) {
       console.error("Error fetching entries:", error);
@@ -79,7 +112,7 @@ const MaintenanceTracker = () => {
       setEntries([]);
     } else {
       const fetchedEntries = data || [];
-      setEntries(fetchedEntries);
+      setEntries(fetchedEntries as MaintenanceEntry[]);
       checkAndNotify(fetchedEntries as MaintenanceEntry[]);
     }
     setLoading(false);
@@ -101,7 +134,7 @@ const MaintenanceTracker = () => {
     }
     
     showSuccess("Maintenance entry added successfully!");
-    fetchEntries();
+    fetchEntries(); // Re-fetch to update list and dashboard summary
     return true;
   };
 
@@ -120,6 +153,38 @@ const MaintenanceTracker = () => {
     }
   };
 
+  // Memoized filtered and sorted list
+  const filteredAndSortedEntries = useMemo(() => {
+    let result = entries;
+
+    // 1. Filtering
+    if (filter !== "all") {
+      result = result.filter(entry => getEntryStatus(entry.next_maintenance) === filter);
+    }
+
+    // 2. Sorting
+    result.sort((a, b) => {
+      if (sortKey === "next_maintenance") {
+        const dateA = new Date(a.next_maintenance.replace(/-/g, "/"));
+        const dateB = new Date(b.next_maintenance.replace(/-/g, "/"));
+        return sortOrder === "asc" ? compareAsc(dateA, dateB) : compareDesc(dateA, dateB);
+      }
+      
+      if (sortKey === "machine") {
+        const machineA = a.machine.toLowerCase();
+        const machineB = b.machine.toLowerCase();
+        if (machineA < machineB) return sortOrder === "asc" ? -1 : 1;
+        if (machineA > machineB) return sortOrder === "asc" ? 1 : -1;
+        return 0;
+      }
+      
+      return 0;
+    });
+
+    return result;
+  }, [entries, filter, sortKey, sortOrder]);
+
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
@@ -129,7 +194,22 @@ const MaintenanceTracker = () => {
         <NotificationPermission onPermissionChange={setNotificationPermission} />
         <DashboardSummary />
         <MaintenanceForm onAddEntry={addEntry} />
-        <MaintenanceList entries={entries} onDeleteEntry={deleteEntry} loading={loading} />
+        
+        <h3 className="text-xl font-semibold mb-4 mt-8">Maintenance Schedule</h3>
+        <MaintenanceControls 
+          filter={filter}
+          onFilterChange={setFilter}
+          sortKey={sortKey}
+          onSortKeyChange={setSortKey}
+          sortOrder={sortOrder}
+          onSortOrderChange={setSortOrder}
+        />
+        
+        <MaintenanceList 
+          entries={filteredAndSortedEntries} 
+          onDeleteEntry={deleteEntry} 
+          loading={loading} 
+        />
       </CardContent>
     </Card>
   );
