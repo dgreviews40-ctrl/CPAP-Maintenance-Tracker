@@ -2,21 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cpapMachines } from "@/data/cpap-machines";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { showSuccess, showError } from "@/utils/toast";
 import { Wrench } from "lucide-react";
-
-// Define the structure for a unique part
-interface UniquePart {
-  machineLabel: string;
-  partTypeLabel: string;
-  modelLabel: string;
-  reorderInfo: string;
-  uniqueKey: string; // Used for local storage and display
-}
+import { useUserParts } from "@/hooks/use-user-parts"; // Import the new hook
 
 // Define the structure for custom frequency settings
 interface CustomFrequency {
@@ -55,32 +46,10 @@ const getMaintenanceFrequencyDays = (partTypeLabel: string): number | null => {
 };
 
 const FrequencyManagement = () => {
-  const [allParts, setAllParts] = useState<UniquePart[]>([]);
+  const { userParts, loading } = useUserParts(); // Use the new hook
   const [customFrequencies, setCustomFrequencies] = useState<CustomFrequency>({});
-  const [loading, setLoading] = useState(true);
 
-  // 1. Extract all unique parts from the static data
-  useEffect(() => {
-    const parts: UniquePart[] = [];
-    cpapMachines.forEach(machine => {
-      machine.parts.forEach(partType => {
-        partType.models.forEach(model => {
-          const uniqueKey = `${machine.label}|${partType.label}|${model.label}`;
-          parts.push({
-            machineLabel: machine.label,
-            partTypeLabel: partType.label,
-            modelLabel: model.label,
-            reorderInfo: model.reorder_info,
-            uniqueKey: uniqueKey,
-          });
-        });
-      });
-    });
-    setAllParts(parts);
-    setLoading(false);
-  }, []);
-
-  // 2. Load custom frequencies from local storage
+  // 1. Load custom frequencies from local storage
   useEffect(() => {
     try {
       const storedFrequencies = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -92,7 +61,7 @@ const FrequencyManagement = () => {
     }
   }, []);
 
-  // 3. Handle frequency change and save to local storage
+  // 2. Handle frequency change and save to local storage
   const handleFrequencyChange = useCallback((uniqueKey: string, days: number | string) => {
     const newDays = Number(days);
     
@@ -117,7 +86,24 @@ const FrequencyManagement = () => {
   }, []);
 
   if (loading) {
-    return <p className="text-center">Loading part data...</p>;
+    return <p className="text-center">Loading user part data...</p>;
+  }
+  
+  if (userParts.length === 0) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Wrench className="h-5 w-5 mr-2" /> Part Replacement Frequency Customization
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            Start by adding a maintenance entry or a spare part to your inventory. Once you use a part, it will appear here for customization.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -129,11 +115,11 @@ const FrequencyManagement = () => {
       </CardHeader>
       <CardContent>
         <p className="text-muted-foreground mb-6">
-          Below is a list of all available CPAP parts. you can override the default replacement frequency (in days) for any part. This custom value will be used when adding new maintenance entries.
+          Below is a list of parts you have used or tracked in your inventory. You can override the default replacement frequency (in days) for any part.
         </p>
 
         <div className="space-y-6">
-          {allParts.map((part) => {
+          {userParts.map((part) => {
             const defaultDays = getMaintenanceFrequencyDays(part.partTypeLabel);
             const currentCustomDays = customFrequencies[part.uniqueKey] || "";
 
