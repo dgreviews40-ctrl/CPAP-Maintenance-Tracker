@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MachineCombobox } from "./MachineCombobox";
 
 export type MaintenanceFilter = "all" | "overdue" | "due_soon" | "on_schedule";
 export type MaintenanceSortKey = "next_maintenance" | "machine";
@@ -16,6 +17,8 @@ interface MaintenanceControlsProps {
   onSortKeyChange: (key: MaintenanceSortKey) => void;
   sortOrder: MaintenanceSortOrder;
   onSortOrderChange: (order: MaintenanceSortOrder) => void;
+  machineFilter: string; // New prop for machine filter
+  onMachineFilterChange: (machine: string) => void; // New handler
 }
 
 const MaintenanceControls = ({
@@ -25,9 +28,20 @@ const MaintenanceControls = ({
   onSortKeyChange,
   sortOrder,
   onSortOrderChange,
+  machineFilter,
+  onMachineFilterChange,
 }: MaintenanceControlsProps) => {
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4 border rounded-lg bg-muted/50 mb-6">
+      {/* Filter by Machine */}
+      <div className="flex-1 space-y-1">
+        <Label htmlFor="filter-machine">Filter by Machine</Label>
+        <MachineCombobox 
+          value={machineFilter} 
+          onChange={onMachineFilterChange} 
+        />
+      </div>
+
       {/* Filter by Status */}
       <div className="flex-1 space-y-1">
         <Label htmlFor="filter-status">Filter by Status</Label>

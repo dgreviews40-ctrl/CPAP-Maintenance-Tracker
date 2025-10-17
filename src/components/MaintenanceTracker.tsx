@@ -62,6 +62,7 @@ const MaintenanceTracker = () => {
   
   // State for Controls
   const [filter, setFilter] = useState<MaintenanceFilter>("all");
+  const [machineFilter, setMachineFilter] = useState<string>(""); // New state for machine filter
   const [sortKey, setSortKey] = useState<MaintenanceSortKey>("next_maintenance");
   const [sortOrder, setSortOrder] = useState<MaintenanceSortOrder>("asc");
 
@@ -217,12 +218,17 @@ const MaintenanceTracker = () => {
   const filteredAndSortedEntries = useMemo(() => {
     let result = entries;
 
-    // 1. Filtering
+    // 1. Filtering by Status
     if (filter !== "all") {
       result = result.filter(entry => getEntryStatus(entry.next_maintenance) === filter);
     }
+    
+    // 2. Filtering by Machine Name
+    if (machineFilter) {
+      result = result.filter(entry => entry.machine.startsWith(machineFilter));
+    }
 
-    // 2. Sorting
+    // 3. Sorting
     result.sort((a, b) => {
       if (sortKey === "next_maintenance") {
         const dateA = new Date(a.next_maintenance.replace(/-/g, "/"));
@@ -242,7 +248,7 @@ const MaintenanceTracker = () => {
     });
 
     return result;
-  }, [entries, filter, sortKey, sortOrder]);
+  }, [entries, filter, machineFilter, sortKey, sortOrder]);
 
   if (authLoading) {
     return (
@@ -268,6 +274,8 @@ const MaintenanceTracker = () => {
           <MaintenanceControls 
             filter={filter}
             onFilterChange={setFilter}
+            machineFilter={machineFilter}
+            onMachineFilterChange={setMachineFilter}
             sortKey={sortKey}
             onSortKeyChange={setSortKey}
             sortOrder={sortOrder}
