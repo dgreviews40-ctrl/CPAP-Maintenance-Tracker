@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { maintenanceEntrySchema, MaintenanceEntryFormValues } from "@/lib/validation";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { showError } from "@/utils/toast";
+import { decrementInventory } from "@/utils/inventory"; // Import the new utility
 
 interface Part {
   value: string;
@@ -182,6 +183,9 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
     });
 
     if (success) {
+      // Decrement inventory for the replaced part
+      await decrementInventory(values.machine, values.partType, values.partModel);
+      
       // Reset form, keeping lastMaintenance defaulted to today for convenience
       form.reset({
         machine: "",
