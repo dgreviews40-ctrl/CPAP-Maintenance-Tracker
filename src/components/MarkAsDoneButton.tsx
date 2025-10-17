@@ -60,18 +60,17 @@ const MarkAsDoneButton = ({ entry, onComplete }: MarkAsDoneButtonProps) => {
 
   return (
     <Button 
-      variant="outline" 
+      variant="default" 
       size="sm" 
       onClick={handleComplete} 
       disabled={isProcessing}
-      className="w-full md:w-auto"
     >
       {isProcessing ? (
         <Loader2 className="h-4 w-4 animate-spin mr-2" />
       ) : (
         <CheckCircle className="h-4 w-4 mr-2" />
       )}
-      Mark as Done (Today)
+      Done
     </Button>
   );
 };

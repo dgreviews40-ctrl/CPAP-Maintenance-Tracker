@@ -82,15 +82,15 @@ const MaintenanceList = ({
   }
 
   return (
-    <div className="border rounded-lg">
-      <Table>
+    <div className="border rounded-lg overflow-x-auto">
+      <Table className="min-w-full">
         <TableHeader>
           <TableRow>
             <TableHead className="w-[40px]">Status</TableHead>
-            <TableHead>Machine / Part</TableHead>
-            <TableHead>Last Maintenance</TableHead>
-            <TableHead>Next Maintenance</TableHead>
-            <TableHead>Notes</TableHead>
+            <TableHead className="min-w-[200px]">Machine / Part</TableHead>
+            <TableHead className="w-[120px]">Last</TableHead>
+            <TableHead className="w-[120px]">Next Due</TableHead>
+            <TableHead className="w-[100px]">Notes</TableHead>
             <TableHead className="text-right w-[150px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -124,7 +124,7 @@ const MaintenanceList = ({
                     entry.next_maintenance.replace(/-/g, "/"),
                   ).toLocaleDateString()}
                 </TableCell>
-                <TableCell className="max-w-xs truncate">
+                <TableCell className="max-w-[100px] truncate text-sm text-muted-foreground">
                   {entry.notes}
                 </TableCell>
                 <TableCell className="text-right space-x-1 flex items-center justify-end">
