@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DebugEnv from "./pages/DebugEnv";
 import Login from "./pages/Login";
+import Settings from "./pages/Settings"; // Import Settings page
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -26,6 +27,7 @@ const App = () => (
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Index />} />
+              <Route path="/settings" element={<Settings />} /> {/* New Settings Route */}
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
