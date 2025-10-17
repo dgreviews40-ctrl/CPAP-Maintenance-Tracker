@@ -13,7 +13,10 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<ProtectedRoute element={<Index />} />} />
+          {/* Use ProtectedRoute as a wrapper for routes that require authentication */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Index />} />
+          </Route>
         </Routes>
       </Router>
       <Toaster />
