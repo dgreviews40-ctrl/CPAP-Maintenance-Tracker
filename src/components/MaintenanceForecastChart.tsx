@@ -10,45 +10,64 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Package } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, CalendarClock } from "lucide-react";
+import { format, isFuture, startOfMonth, addMonths } from "date-fns";
 
-interface InventoryData {
-  name: string; // Part Model Label
-  stock: number;
-  threshold: number;
-  needsReorder: boolean;
+interface ForecastData {
+  month: string;
+  tasks: number;
 }
 
-const InventoryStatusChart = () => {
-  const [chartData, setChartData] = useState<InventoryData[]>([]);
+const MaintenanceForecastChart = () => {
+  const [chartData, setChartData] = useState<ForecastData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAndProcessData = async () => {
       setLoading(true);
       
+      // Fetch all maintenance entries that are due in the future (or today)
       const { data, error } = await supabase
-        .from("part_inventory")
-        .select("part_model_label, quantity, reorder_threshold")
-        .order("quantity", { ascending: true });
+        .from("maintenance_entries")
+        .select("next_maintenance")
+        .gte("next_maintenance", format(new Date(), 'yyyy-MM-dd'));
 
       if (error) {
-        console.error("Error fetching inventory for chart:", error);
+        console.error("Error fetching maintenance entries for forecast:", error);
         setLoading(false);
         return;
       }
 
       if (data) {
-        const processedData: InventoryData[] = data.map((item) => ({
-          name: item.part_model_label,
-          stock: item.quantity,
-          threshold: item.reorder_threshold,
-          needsReorder: item.quantity <= item.reorder_threshold,
-        }));
+        const taskCounts: Record<string, number> = {};
+        const today = new Date();
+        const sixMonthsFromNow = addMonths(today, 6);
+
+        data.forEach((entry: { next_maintenance: string }) => {
+          const nextDate = new Date(entry.next_maintenance.replace(/-/g, "/"));
+          
+          // Only include tasks due in the next 6 months
+          if (isFuture(nextDate) || format(nextDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) {
+            if (nextDate < sixMonthsFromNow) {
+              const monthKey = format(startOfMonth(nextDate), 'yyyy-MM');
+              taskCounts[monthKey] = (taskCounts[monthKey] || 0) + 1;
+            }
+          }
+        });
+        
+        // Generate data points for the next 6 months, even if tasks are zero
+        const processedData: ForecastData[] = [];
+        for (let i = 0; i < 6; i++) {
+          const monthDate = addMonths(startOfMonth(today), i);
+          const monthKey = format(monthDate, 'yyyy-MM');
+          
+          processedData.push({
+            month: format(monthDate, 'MMM yyyy'),
+            tasks: taskCounts[monthKey] || 0,
+          });
+        }
           
         setChartData(processedData);
       }
@@ -63,12 +82,12 @@ const InventoryStatusChart = () => {
       <Card className="w-full mt-6">
         <CardHeader>
           <CardTitle className="flex items-center text-lg">
-            <Package className="h-5 w-5 mr-2" /> Part Inventory Status
+            <CalendarClock className="h-5 w-5 mr-2" /> Maintenance Forecast
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-48 flex items-center justify-center text-muted-foreground">
-            No parts tracked in inventory yet.
+            No upcoming maintenance tasks in the next 6 months.
           </div>
         </CardContent>
       </Card>
@@ -79,7 +98,7 @@ const InventoryStatusChart = () => {
     <Card className="w-full mt-6">
       <CardHeader>
         <CardTitle className="flex items-center text-lg">
-          <Package className="h-5 w-5 mr-2" /> Part Inventory Status
+          <CalendarClock className="h-5 w-5 mr-2" /> Maintenance Forecast (Next 6 Months)
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -92,23 +111,21 @@ const InventoryStatusChart = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={chartData} 
-                layout="vertical"
                 margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" vertical={false} />
                 <XAxis 
+                  dataKey="month" 
+                  stroke="hsl(var(--foreground))" 
+                  fontSize={12} 
+                />
+                <YAxis 
+                  dataKey="tasks" 
                   type="number" 
                   stroke="hsl(var(--foreground))" 
                   fontSize={12} 
                   allowDecimals={false}
-                />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  stroke="hsl(var(--foreground))" 
-                  fontSize={12} 
-                  width={120}
-                  tickFormatter={(value) => value.length > 15 ? value.substring(0, 15) + '...' : value}
+                  tickFormatter={(value) => value.toString()}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -117,29 +134,13 @@ const InventoryStatusChart = () => {
                     borderRadius: '0.5rem' 
                   }}
                   labelStyle={{ fontWeight: 'bold', color: 'hsl(var(--foreground))' }}
-                  formatter={(value, name, props) => {
-                    if (name === 'Stock') {
-                      return [value, 'Current Stock'];
-                    }
-                    if (name === 'Threshold') {
-                      return [value, 'Reorder Threshold'];
-                    }
-                    return value;
-                  }}
+                  formatter={(value) => [`${value} tasks`, 'Total']}
                 />
-                <Legend />
                 <Bar 
-                  dataKey="stock" 
-                  name="Stock"
+                  dataKey="tasks" 
+                  name="Tasks"
                   fill="hsl(var(--primary))" 
-                  radius={[0, 4, 4, 0]} 
-                />
-                <Bar 
-                  dataKey="threshold" 
-                  name="Threshold"
-                  fill="hsl(var(--destructive))" 
-                  opacity={0.5}
-                  radius={[0, 4, 4, 0]} 
+                  radius={[4, 4, 0, 0]} 
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -150,4 +151,4 @@ const InventoryStatusChart = () => {
   );
 };
 
-export default InventoryStatusChart;
+export default MaintenanceForecastChart;
