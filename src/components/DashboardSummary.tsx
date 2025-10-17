@@ -3,14 +3,27 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
-import { AlertTriangle, CalendarCheck, Wrench } from "lucide-react";
-import { isBefore, isWithinInterval, addDays, startOfDay } from "date-fns";
+import { AlertTriangle, CalendarCheck, Wrench, Clock } from "lucide-react";
+import { isBefore, isWithinInterval, addDays, startOfDay, format, differenceInDays } from "date-fns";
+import { cn } from "@/lib/utils";
+
+interface Stats {
+  overdue: number;
+  dueSoon: number;
+  total: number;
+  nextDue: {
+    machine: string;
+    date: string;
+    daysAway: number;
+  } | null;
+}
 
 const DashboardSummary = () => {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     overdue: 0,
     dueSoon: 0,
     total: 0,
+    nextDue: null,
   });
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +32,8 @@ const DashboardSummary = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("maintenance_entries")
-        .select("next_maintenance");
+        .select("machine, next_maintenance")
+        .order("next_maintenance", { ascending: true }); // Order by date to easily find the next due item
 
       if (error) {
         console.error("Error fetching maintenance entries for stats:", error);
@@ -33,8 +47,10 @@ const DashboardSummary = () => {
 
         let overdueCount = 0;
         let dueSoonCount = 0;
+        let nextDueItem: Stats['nextDue'] = null;
 
-        data.forEach((entry: { next_maintenance: string }) => {
+        data.forEach((entry: { machine: string, next_maintenance: string }) => {
+          // Handle timezone issues by replacing hyphens with slashes
           const nextMaintenanceDate = startOfDay(
             new Date(entry.next_maintenance.replace(/-/g, "/")),
           );
@@ -49,12 +65,23 @@ const DashboardSummary = () => {
           ) {
             dueSoonCount++;
           }
+          
+          // Find the very next item that is not overdue
+          if (!nextDueItem && !isBefore(nextMaintenanceDate, today)) {
+            const daysAway = differenceInDays(nextMaintenanceDate, today);
+            nextDueItem = {
+              machine: entry.machine,
+              date: format(nextMaintenanceDate, 'MMM dd, yyyy'),
+              daysAway: daysAway,
+            };
+          }
         });
 
         setStats({
           overdue: overdueCount,
           dueSoon: dueSoonCount,
           total: data.length,
+          nextDue: nextDueItem,
         });
       }
       setLoading(false);
@@ -65,8 +92,8 @@ const DashboardSummary = () => {
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-3">
-        {[...Array(3)].map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div className="h-4 w-24 bg-muted rounded animate-pulse"></div>
@@ -82,7 +109,35 @@ const DashboardSummary = () => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-4">
+      {/* Next Due Card */}
+      <Card className={cn(
+        stats.nextDue && stats.nextDue.daysAway <= 7 && stats.nextDue.daysAway >= 0 ? "border-yellow-500" : ""
+      )}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Next Maintenance</CardTitle>
+          <Clock className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {stats.nextDue ? (
+            <>
+              <div className="text-xl font-bold truncate" title={stats.nextDue.machine}>
+                {stats.nextDue.machine.split(' - ')[0]}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.nextDue.date} ({stats.nextDue.daysAway} days)
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="text-xl font-bold">N/A</div>
+              <p className="text-xs text-muted-foreground mt-1">No upcoming tasks</p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Total Entries Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
@@ -95,6 +150,8 @@ const DashboardSummary = () => {
           </p>
         </CardContent>
       </Card>
+      
+      {/* Due Soon Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Due Soon</CardTitle>
@@ -107,6 +164,8 @@ const DashboardSummary = () => {
           </p>
         </CardContent>
       </Card>
+      
+      {/* Overdue Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Overdue</CardTitle>

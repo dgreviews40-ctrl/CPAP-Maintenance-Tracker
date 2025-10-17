@@ -25,7 +25,7 @@ interface InventoryItem {
   part_model_label: string;
   reorder_info: string | null;
   quantity: number;
-  reorder_threshold: number; // New field
+  reorder_threshold: number;
   last_restock: string | null;
 }
 
@@ -46,7 +46,28 @@ const PartInventory = () => {
   const [partType, setPartType] = useState("");
   const [partModel, setPartModel] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [reorderThreshold, setReorderThreshold] = useState(0); // New form state
+  const [reorderThreshold, setReorderThreshold] = useState(0);
+
+  // Helper to check and send notifications
+  const checkAndNotifyInventory = useCallback((items: InventoryItem[]) => {
+    if (!("Notification" in window) || Notification.permission !== 'granted') {
+      return;
+    }
+
+    const partsNeedingReorder = items.filter(item => item.quantity <= item.reorder_threshold);
+
+    if (partsNeedingReorder.length > 0) {
+      const body = partsNeedingReorder.map(p => 
+        `${p.part_model_label} (${p.machine_label}) - Stock: ${p.quantity}`
+      ).join('\n');
+
+      new Notification(`📦 ${partsNeedingReorder.length} Part(s) Need Reorder!`, {
+        body: body,
+        icon: "/favicon.ico",
+      });
+    }
+  }, []);
+
 
   const fetchInventory = useCallback(async () => {
     if (!user) return;
@@ -61,10 +82,12 @@ const PartInventory = () => {
       console.error("Error fetching inventory:", error);
       showError("Failed to load inventory.");
     } else {
-      setInventory(data as InventoryItem[]);
+      const fetchedInventory = data as InventoryItem[];
+      setInventory(fetchedInventory);
+      checkAndNotifyInventory(fetchedInventory); // Check and notify after fetching
     }
     setLoading(false);
-  }, [user]);
+  }, [user, checkAndNotifyInventory]);
 
   useEffect(() => {
     fetchInventory();
@@ -104,7 +127,7 @@ const PartInventory = () => {
       part_model_label: partModel,
       reorder_info: reorderInfo,
       quantity: quantity,
-      reorder_threshold: reorderThreshold, // Include threshold
+      reorder_threshold: reorderThreshold,
       last_restock: format(new Date(), 'yyyy-MM-dd'),
     };
 
