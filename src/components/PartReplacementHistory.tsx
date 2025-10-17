@@ -113,67 +113,42 @@ const PartReplacementHistory = () => {
 
   if (loading || loadingUserParts) {
     return (
-      <Card className="w-full mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <History className="h-5 w-5 mr-2" /> Part Replacement History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-32 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="p-4 flex items-center justify-center h-32">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
   
   if (historyData.length === 0) {
     return (
-      <Card className="w-full mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <History className="h-5 w-5 mr-2" /> Part Replacement History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-muted-foreground">
-            No replacement history found. Add maintenance entries to start tracking.
-          </div>
-        </CardContent>
-      </Card>
+      <div className="p-4 text-muted-foreground">
+        No replacement history found. Add maintenance entries to start tracking.
+      </div>
     );
   }
 
   return (
-    <Card className="w-full mt-6">
-      <CardHeader>
-        <CardTitle className="flex items-center text-lg">
-          <History className="h-5 w-5 mr-2" /> Part Replacement History
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {historyData.map((part, index) => (
-          <div key={part.uniqueKey}>
-            <h4 className="font-semibold text-md mb-2">
-              {part.modelLabel} ({part.machineLabel})
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {part.history.map((date, dateIndex) => (
-                <div 
-                  key={dateIndex} 
-                  className="flex items-center text-sm bg-secondary p-2 rounded-md text-secondary-foreground"
-                >
-                  <Calendar className="h-4 w-4 mr-1 text-primary" />
-                  {format(date, 'MMM dd, yyyy')}
-                </div>
-              ))}
-            </div>
-            {index < historyData.length - 1 && <Separator className="mt-4" />}
+    <div className="space-y-4 p-4">
+      {historyData.map((part, index) => (
+        <div key={part.uniqueKey}>
+          <h4 className="font-semibold text-sm mb-1 truncate">
+            {part.modelLabel} ({part.machineLabel})
+          </h4>
+          <div className="flex flex-wrap gap-1">
+            {part.history.map((date, dateIndex) => (
+              <div 
+                key={dateIndex} 
+                className="flex items-center text-xs bg-secondary p-1 rounded-md text-secondary-foreground"
+              >
+                <Calendar className="h-3 w-3 mr-1 text-primary" />
+                {format(date, 'MMM dd, yyyy')}
+              </div>
+            ))}
           </div>
-        ))}
-      </CardContent>
-    </Card>
+          {index < historyData.length - 1 && <Separator className="mt-3" />}
+        </div>
+      ))}
+    </div>
   );
 };
 

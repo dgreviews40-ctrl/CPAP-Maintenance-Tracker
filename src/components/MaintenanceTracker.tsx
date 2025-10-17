@@ -14,12 +14,12 @@ import NotificationPermission from "./NotificationPermission";
 import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, MaintenanceSortOrder } from "./MaintenanceControls";
 import InventoryStatusChart from "./InventoryStatusChart"; 
 import PartReplacementHistory from "./PartReplacementHistory";
-import MaintenanceTimeline from "./MaintenanceTimeline"; // Import the new timeline component
+import MaintenanceTimeline from "./MaintenanceTimeline"; 
 import { supabase } from "@/lib/supabase";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
+import { Loader2, Warehouse, History } from "lucide-react";
 import EditMaintenanceDialog from "./EditMaintenanceDialog"; 
 
 export type MaintenanceEntry = {
@@ -269,9 +269,38 @@ const MaintenanceTracker = () => {
         <CardContent>
           <NotificationPermission onPermissionChange={setNotificationPermission} />
           <DashboardSummary />
-          <InventoryStatusChart />
-          <MaintenanceTimeline /> {/* Added the new timeline component */}
-          <PartReplacementHistory />
+          
+          {/* Two-Section Dashboard Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            
+            {/* Section 1: Inventory Status Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <Warehouse className="h-5 w-5 mr-2" /> Inventory Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <InventoryStatusChart />
+              </CardContent>
+            </Card>
+
+            {/* Section 2: Part Replacement History */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <History className="h-5 w-5 mr-2" /> Part Replacement History
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <PartReplacementHistory />
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Maintenance Timeline (Full Width) */}
+          <MaintenanceTimeline /> 
+
           <MaintenanceForm onAddEntry={addEntry} />
           
           <h3 className="text-xl font-semibold mb-4 mt-8">Maintenance Schedule</h3>
@@ -289,7 +318,7 @@ const MaintenanceTracker = () => {
           <MaintenanceList 
             entries={filteredAndSortedEntries} 
             onDeleteEntry={deleteEntry} 
-            onEditEntry={handleEdit} // Pass the edit handler
+            onEditEntry={handleEdit} 
             loading={loading} 
           />
         </CardContent>
