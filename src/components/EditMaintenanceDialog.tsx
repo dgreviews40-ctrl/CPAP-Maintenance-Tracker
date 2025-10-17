@@ -19,6 +19,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Wrench } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { maintenanceEntrySchema, MaintenanceEntryFormValues } from "@/lib/validation";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { showError } from "@/utils/toast";
 
 interface Part {
   value: string;
@@ -106,14 +111,26 @@ const parseMachineString = (machineString: string) => {
 const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMaintenanceDialogProps) => {
   const initialParsed = useMemo(() => parseMachineString(entry.machine), [entry.machine]);
 
-  const [machine, setMachine] = useState(initialParsed.machine);
-  const [partType, setPartType] = useState(initialParsed.partType);
-  const [partModel, setPartModel] = useState(initialParsed.partModel);
-  const [lastMaintenance, setLastMaintenance] = useState(entry.last_maintenance);
-  const [customFrequencyInput, setCustomFrequencyInput] = useState<number | string>("");
-  const [nextMaintenance, setNextMaintenance] = useState(entry.next_maintenance);
-  const [notes, setNotes] = useState(entry.notes || "");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const form = useForm<MaintenanceEntryFormValues>({
+    resolver: zodResolver(maintenanceEntrySchema),
+    defaultValues: {
+      machine: initialParsed.machine,
+      partType: initialParsed.partType,
+      partModel: initialParsed.partModel,
+      last_maintenance: entry.last_maintenance,
+      next_maintenance: entry.next_maintenance,
+      notes: entry.notes || "",
+      customFrequencyInput: undefined, // Always reset custom input on dialog open
+    },
+  });
+
+  const { watch, setValue, reset, formState: { isSubmitting } } = form;
+
+  const machine = watch("machine");
+  const partType = watch("partType");
+  const partModel = watch("partModel");
+  const lastMaintenance = watch("last_maintenance");
+  const customFrequencyInput = watch("customFrequencyInput");
 
   // Derived state for combobox options
   const machineData = cpapMachines.find(m => m.label === machine);
@@ -134,14 +151,16 @@ const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMain
   // Effect to reset state when a new entry is passed (e.g., dialog opens for a different entry)
   useEffect(() => {
     const newParsed = parseMachineString(entry.machine);
-    setMachine(newParsed.machine);
-    setPartType(newParsed.partType);
-    setPartModel(newParsed.partModel);
-    setLastMaintenance(entry.last_maintenance);
-    setNextMaintenance(entry.next_maintenance);
-    setNotes(entry.notes || "");
-    setCustomFrequencyInput(""); // Always reset custom input on dialog open
-  }, [entry]);
+    reset({
+      machine: newParsed.machine,
+      partType: newParsed.partType,
+      partModel: newParsed.partModel,
+      last_maintenance: entry.last_maintenance,
+      next_maintenance: entry.next_maintenance,
+      notes: entry.notes || "",
+      customFrequencyInput: undefined,
+    });
+  }, [entry, reset]);
 
 
   // Effect to calculate next maintenance date automatically
@@ -149,49 +168,22 @@ const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMain
     if (lastMaintenance && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0) {
       const lastDate = new Date(lastMaintenance.replace(/-/g, "/"));
       const nextDate = addDays(lastDate, effectiveFrequencyDays);
-      setNextMaintenance(format(nextDate, 'yyyy-MM-dd'));
+      setValue("next_maintenance", format(nextDate, 'yyyy-MM-dd'), { shouldValidate: true });
     } else if (lastMaintenance) {
       // If last maintenance is set but frequency is unknown/invalid, clear next maintenance
-      setNextMaintenance("");
+      setValue("next_maintenance", "");
     }
-  }, [lastMaintenance, partType, partModel, customFrequencyInput, effectiveFrequencyDays, machine, customFrequencyFromStorage]);
+  }, [lastMaintenance, effectiveFrequencyDays, setValue]);
 
 
-  const handleMachineChange = (selectedLabel: string) => {
-    setMachine(selectedLabel);
-    // Reset dependent fields if machine changes
-    setPartType("");
-    setPartModel("");
-    setCustomFrequencyInput("");
-  };
-
-  const handlePartTypeChange = (selectedLabel: string) => {
-    setPartType(selectedLabel);
-    // Reset dependent fields if part type changes
-    setPartModel("");
-    setCustomFrequencyInput("");
-  };
-
-  const handlePartModelChange = (selectedLabel: string) => {
-    setPartModel(selectedLabel);
-    setCustomFrequencyInput("");
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!machine || !partType || !partModel || !lastMaintenance || !nextMaintenance) {
-      alert("Please fill out all required fields: Machine, Part Type, Part Model, and Dates.");
-      return;
-    }
-    
+  const onSubmit = async (values: MaintenanceEntryFormValues) => {
+    const selectedModel = availableModels.find(m => m.label === values.partModel);
     const reorderInfo = selectedModel ? ` (SKU: ${selectedModel.reorder_info})` : '';
-
-    setIsSubmitting(true);
     
-    let finalNotes = notes;
+    let finalNotes = values.notes || "";
     // Append frequency info to notes if it's not already there or if it changed
-    if (customFrequencyInput) {
-      finalNotes += ` [Form Custom Frequency: ${customFrequencyInput} days]`;
+    if (values.customFrequencyInput) {
+      finalNotes += ` [Form Custom Frequency: ${values.customFrequencyInput} days]`;
     } else if (customFrequencyFromStorage) {
       finalNotes += ` [Part Management Custom Frequency: ${customFrequencyFromStorage} days]`;
     } else if (defaultFrequency) {
@@ -199,16 +191,15 @@ const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMain
     }
 
     const success = await onUpdate(entry.id, {
-      machine: `${machine} - ${partType} - ${partModel}${reorderInfo}`,
-      last_maintenance: lastMaintenance,
-      next_maintenance: nextMaintenance,
+      machine: `${values.machine} - ${values.partType} - ${values.partModel}${reorderInfo}`,
+      last_maintenance: values.last_maintenance,
+      next_maintenance: values.next_maintenance,
       notes: finalNotes,
     });
 
     if (success) {
       onOpenChange(false);
     }
-    setIsSubmitting(false);
   };
 
   const placeholderFrequency = customFrequencyFromStorage 
@@ -223,98 +214,185 @@ const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMain
             <Wrench className="h-5 w-5 mr-2" /> Edit Maintenance Entry
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="machine">Machine Name</Label>
-              <MachineCombobox value={machine} onChange={handleMachineChange} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="part">Part Type</Label>
-              <PartCombobox 
-                value={partType} 
-                onChange={handlePartTypeChange} 
-                parts={availableParts} 
-                disabled={!machine} 
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              {/* Machine Name */}
+              <FormField
+                control={form.control}
+                name="machine"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Machine Name</FormLabel>
+                    <FormControl>
+                      <MachineCombobox 
+                        value={field.value} 
+                        onChange={(value) => {
+                          field.onChange(value);
+                          setValue("partType", "");
+                          setValue("partModel", "");
+                          setValue("customFrequencyInput", undefined);
+                        }} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="model">Part Model</Label>
-              <ModelCombobox 
-                value={partModel} 
-                onChange={handlePartModelChange} 
-                models={availableModels} 
-                disabled={!partType || availableModels.length === 0} 
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="last_maintenance">Last Maintenance Date</Label>
-              <Input
-                id="last_maintenance"
-                type="date"
-                value={lastMaintenance}
-                onChange={(e) => setLastMaintenance(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="custom_frequency">Custom Frequency (Days)</Label>
-              <Input
-                id="custom_frequency"
-                type="number"
-                placeholder={placeholderFrequency}
-                value={customFrequencyInput}
-                onChange={(e) => setCustomFrequencyInput(e.target.value ? Number(e.target.value) : "")}
-                min="1"
-              />
-              {effectiveFrequencyDays !== null && effectiveFrequencyDays > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Using frequency: {effectiveFrequencyDays} days.
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="next_maintenance">Next Maintenance Date</Label>
-              <Input
-                id="next_maintenance"
-                type="date"
-                value={nextMaintenance}
-                onChange={(e) => setNextMaintenance(e.target.value)}
-                required
-                // Disable manual input if we successfully calculated a date
-                disabled={!!nextMaintenance && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0}
-                className={nextMaintenance && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0 ? "bg-muted/50" : ""}
-              />
-              {nextMaintenance && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Calculated based on {effectiveFrequencyDays} days.
-                </p>
-              )}
-            </div>
-          </div>
-          
-          <div className="space-y-2 col-span-1 md:col-span-3">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional notes about the maintenance"
-            />
-          </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </form>
+              {/* Part Type */}
+              <FormField
+                control={form.control}
+                name="partType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Part Type</FormLabel>
+                    <FormControl>
+                      <PartCombobox 
+                        value={field.value} 
+                        onChange={(value) => {
+                          field.onChange(value);
+                          setValue("partModel", "");
+                          setValue("customFrequencyInput", undefined);
+                        }} 
+                        parts={availableParts} 
+                        disabled={!machine} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Part Model */}
+              <FormField
+                control={form.control}
+                name="partModel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Part Model</FormLabel>
+                    <FormControl>
+                      <ModelCombobox 
+                        value={field.value} 
+                        onChange={(value) => {
+                          field.onChange(value);
+                          setValue("customFrequencyInput", undefined);
+                        }} 
+                        models={availableModels} 
+                        disabled={!partType || availableModels.length === 0} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              {/* Last Maintenance Date */}
+              <FormField
+                control={form.control}
+                name="last_maintenance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Maintenance Date</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Custom Frequency (Days) */}
+              <FormField
+                control={form.control}
+                name="customFrequencyInput"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Custom Frequency (Days)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder={placeholderFrequency}
+                        value={field.value === undefined ? "" : field.value}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value ? Number(value) : "");
+                        }}
+                        min="1"
+                      />
+                    </FormControl>
+                    {effectiveFrequencyDays !== null && effectiveFrequencyDays > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Using frequency: {effectiveFrequencyDays} days.
+                      </p>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Next Maintenance Date (Read-only/Calculated) */}
+              <FormField
+                control={form.control}
+                name="next_maintenance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Next Maintenance Date</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                        // Disable manual input since it's calculated
+                        disabled={true}
+                        className={field.value ? "bg-muted/50" : ""}
+                      />
+                    </FormControl>
+                    {field.value && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Calculated based on {effectiveFrequencyDays} days.
+                      </p>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Notes */}
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Optional notes about the maintenance"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
