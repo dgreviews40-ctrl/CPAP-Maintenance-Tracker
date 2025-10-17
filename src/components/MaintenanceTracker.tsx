@@ -13,7 +13,8 @@ import DashboardSummary from "./DashboardSummary";
 import NotificationPermission from "./NotificationPermission";
 import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, MaintenanceSortOrder } from "./MaintenanceControls";
 import InventoryStatusChart from "./InventoryStatusChart"; 
-import PartReplacementHistory from "./PartReplacementHistory"; // Import the new history component
+import PartReplacementHistory from "./PartReplacementHistory";
+import MaintenanceTimeline from "./MaintenanceTimeline"; // Import the new timeline component
 import { supabase } from "@/lib/supabase";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
@@ -269,7 +270,8 @@ const MaintenanceTracker = () => {
           <NotificationPermission onPermissionChange={setNotificationPermission} />
           <DashboardSummary />
           <InventoryStatusChart />
-          <PartReplacementHistory /> {/* Added the new history component */}
+          <MaintenanceTimeline /> {/* Added the new timeline component */}
+          <PartReplacementHistory />
           <MaintenanceForm onAddEntry={addEntry} />
           
           <h3 className="text-xl font-semibold mb-4 mt-8">Maintenance Schedule</h3>
