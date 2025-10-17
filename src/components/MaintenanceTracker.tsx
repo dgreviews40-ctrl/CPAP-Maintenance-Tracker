@@ -15,6 +15,8 @@ import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, Maintenance
 import { supabase } from "@/lib/supabase";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
+import { useAuth } from "@/hooks/use-auth";
+import { Loader2 } from "lucide-react";
 
 export type MaintenanceEntry = {
   id: string;
@@ -51,6 +53,7 @@ const getEntryStatus = (dateStr: string): MaintenanceFilter => {
 
 
 const MaintenanceTracker = () => {
+  const { user, loading: authLoading } = useAuth();
   const [entries, setEntries] = useState<MaintenanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
@@ -99,12 +102,14 @@ const MaintenanceTracker = () => {
   }, [notificationPermission]);
 
   const fetchEntries = async () => {
+    if (!user) return; // Only fetch if authenticated
+
     setLoading(true);
-    // We fetch all data and handle sorting/filtering client-side for simplicity and to avoid multiple DB calls for different views.
+    // RLS ensures we only get the user's data
     const { data, error } = await supabase
       .from("maintenance_entries")
       .select("*")
-      .order("next_maintenance", { ascending: true }); // Default sort
+      .order("next_maintenance", { ascending: true }); 
 
     if (error) {
       console.error("Error fetching entries:", error);
@@ -119,13 +124,27 @@ const MaintenanceTracker = () => {
   };
 
   useEffect(() => {
-    fetchEntries();
-  }, []);
+    if (user) {
+      fetchEntries();
+    } else if (!authLoading) {
+      // Clear entries if user logs out
+      setEntries([]);
+      setLoading(false);
+    }
+  }, [user, authLoading]);
 
   const addEntry = async (entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => {
+    if (!user) {
+      showError("You must be logged in to add entries.");
+      return false;
+    }
+    
+    // Explicitly include user_id for clarity, although RLS insert policy handles it
+    const entryWithUserId = { ...entry, user_id: user.id };
+
     const { error } = await supabase
       .from("maintenance_entries")
-      .insert([entry]);
+      .insert([entryWithUserId]);
 
     if (error) {
       console.error("Error adding entry:", error);
@@ -139,6 +158,12 @@ const MaintenanceTracker = () => {
   };
 
   const deleteEntry = async (id: string) => {
+    if (!user) {
+      showError("You must be logged in to delete entries.");
+      return;
+    }
+    
+    // RLS ensures only the owner can delete
     const { error } = await supabase
       .from("maintenance_entries")
       .delete()
@@ -184,6 +209,13 @@ const MaintenanceTracker = () => {
     return result;
   }, [entries, filter, sortKey, sortOrder]);
 
+  if (authLoading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
