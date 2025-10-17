@@ -5,16 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { showSuccess, showError } from "@/utils/toast";
-import { Wrench } from "lucide-react";
-import { useUserParts } from "@/hooks/use-user-parts"; // Import the new hook
-
-// Define the structure for custom frequency settings
-interface CustomFrequency {
-  [uniqueKey: string]: number; // uniqueKey maps to custom days
-}
-
-const LOCAL_STORAGE_KEY = "cpap_custom_frequencies";
+import { Wrench, Loader2 } from "lucide-react";
+import { useUserParts } from "@/hooks/use-user-parts";
+import { useCustomFrequencies } from "@/hooks/use-custom-frequencies"; // Import the new hook
 
 // Helper to get default frequency (copied from MaintenanceForm for consistency)
 const getMaintenanceFrequencyDays = (partTypeLabel: string): number | null => {
@@ -46,47 +39,68 @@ const getMaintenanceFrequencyDays = (partTypeLabel: string): number | null => {
 };
 
 const FrequencyManagement = () => {
-  const { userParts, loading } = useUserParts(); // Use the new hook
-  const [customFrequencies, setCustomFrequencies] = useState<CustomFrequency>({});
+  const { userParts, loading: loadingParts } = useUserParts();
+  const { frequencies, loading: loadingFrequencies, updateFrequency } = useCustomFrequencies();
+  
+  // Local state to manage input values before saving (improves UX)
+  const [inputFrequencies, setInputFrequencies] = useState<Record<string, number | string>>({});
 
-  // 1. Load custom frequencies from local storage
   useEffect(() => {
-    try {
-      const storedFrequencies = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedFrequencies) {
-        setCustomFrequencies(JSON.parse(storedFrequencies));
-      }
-    } catch (e) {
-      console.error("Could not load custom frequencies from local storage", e);
-    }
-  }, []);
-
-  // 2. Handle frequency change and save to local storage
-  const handleFrequencyChange = useCallback((uniqueKey: string, days: number | string) => {
-    const newDays = Number(days);
-    
-    setCustomFrequencies(prev => {
-      const newFrequencies = { ...prev };
-      if (newDays > 0) {
-        newFrequencies[uniqueKey] = newDays;
-      } else {
-        delete newFrequencies[uniqueKey];
-      }
-      
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newFrequencies));
-        showSuccess("Frequency updated!");
-      } catch (e) {
-        showError("Failed to save frequency.");
-        console.error("Failed to save to local storage", e);
-      }
-      
-      return newFrequencies;
+    // Initialize local input state from fetched frequencies
+    const initialInputs: Record<string, number | string> = {};
+    userParts.forEach(part => {
+      initialInputs[part.uniqueKey] = frequencies[part.uniqueKey] || "";
     });
-  }, []);
+    setInputFrequencies(initialInputs);
+  }, [userParts, frequencies]);
+
+  const handleInputChange = (uniqueKey: string, value: string) => {
+    setInputFrequencies(prev => ({
+      ...prev,
+      [uniqueKey]: value,
+    }));
+  };
+
+  const handleSave = async (uniqueKey: string) => {
+    const value = inputFrequencies[uniqueKey];
+    const days = Number(value);
+    
+    if (days > 0) {
+      await updateFrequency(uniqueKey, days);
+    } else {
+      // If input is cleared or invalid, reset to default (delete entry)
+      await updateFrequency(uniqueKey, null);
+      setInputFrequencies(prev => {
+        const newInputs = { ...prev };
+        newInputs[uniqueKey] = "";
+        return newInputs;
+      });
+    }
+  };
+  
+  const handleReset = async (uniqueKey: string) => {
+    await updateFrequency(uniqueKey, null);
+    setInputFrequencies(prev => ({
+      ...prev,
+      [uniqueKey]: "",
+    }));
+  };
+
+  const loading = loadingParts || loadingFrequencies;
 
   if (loading) {
-    return <p className="text-center">Loading user part data...</p>;
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Wrench className="h-5 w-5 mr-2" /> Part Replacement Frequency Customization
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center items-center h-32">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
   }
   
   if (userParts.length === 0) {
@@ -121,7 +135,8 @@ const FrequencyManagement = () => {
         <div className="space-y-6">
           {userParts.map((part) => {
             const defaultDays = getMaintenanceFrequencyDays(part.partTypeLabel);
-            const currentCustomDays = customFrequencies[part.uniqueKey] || "";
+            const currentInputValue = inputFrequencies[part.uniqueKey] ?? "";
+            const isCustom = frequencies.hasOwnProperty(part.uniqueKey);
 
             return (
               <div key={part.uniqueKey} className="border p-4 rounded-lg grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
@@ -152,19 +167,18 @@ const FrequencyManagement = () => {
                       id={`custom-${part.uniqueKey}`}
                       type="number"
                       placeholder={defaultDays ? `Override ${defaultDays}` : "Enter days"}
-                      value={currentCustomDays}
-                      onChange={(e) => handleFrequencyChange(part.uniqueKey, e.target.value)}
+                      value={currentInputValue}
+                      onChange={(e) => handleInputChange(part.uniqueKey, e.target.value)}
                       min="1"
                     />
-                    {currentCustomDays && (
-                      <Button 
-                        variant="outline" 
-                        onClick={() => handleFrequencyChange(part.uniqueKey, "")}
-                        title="Reset to default"
-                      >
-                        Reset
-                      </Button>
-                    )}
+                    <Button 
+                      variant={isCustom ? "destructive" : "default"}
+                      onClick={() => isCustom ? handleReset(part.uniqueKey) : handleSave(part.uniqueKey)}
+                      disabled={!currentInputValue && !isCustom}
+                      title={isCustom ? "Reset to default" : "Save Custom Frequency"}
+                    >
+                      {isCustom ? "Reset" : "Save"}
+                    </Button>
                   </div>
                 </div>
               </div>

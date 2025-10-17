@@ -16,7 +16,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { maintenanceEntrySchema, MaintenanceEntryFormValues } from "@/lib/validation";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { showError } from "@/utils/toast";
-import { decrementInventory } from "@/utils/inventory"; // Import the new utility
+import { decrementInventory } from "@/utils/inventory";
+import { getMaintenanceFrequencyDays, getCustomFrequencyFromDB } from "@/utils/frequency"; // Import new utilities
 
 interface Part {
   value: string;
@@ -27,61 +28,6 @@ interface Part {
 interface MaintenanceFormProps {
   onAddEntry: (entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => Promise<boolean>;
 }
-
-// --- Frequency Helpers (Must match PartManagement.tsx) ---
-const LOCAL_STORAGE_KEY = "cpap_custom_frequencies";
-
-// Helper function to determine maintenance frequency in days
-const getMaintenanceFrequencyDays = (partTypeLabel: string): number | null => {
-  const lowerCaseLabel = partTypeLabel.toLowerCase();
-  
-  if (lowerCaseLabel.includes("filter")) {
-    // Differentiate between disposable (30 days) and reusable (90 days)
-    if (lowerCaseLabel.includes("disposable")) return 30;
-    if (lowerCaseLabel.includes("reusable")) return 90;
-    // Default filter replacement is often monthly
-    return 30; 
-  }
-  
-  if (lowerCaseLabel.includes("tubing") || lowerCaseLabel.includes("hose")) {
-    return 90; // Every 3 months
-  }
-  
-  if (lowerCaseLabel.includes("mask") || lowerCaseLabel.includes("cushion") || lowerCaseLabel.includes("pillow")) {
-    return 30; // Monthly replacement for mask components
-  }
-
-  if (lowerCaseLabel.includes("chamber") || lowerCaseLabel.includes("tank")) {
-    return 180; // Every 6 months
-  }
-
-  if (lowerCaseLabel.includes("headgear") || lowerCaseLabel.includes("frame")) {
-    return 180; // Every 6 months
-  }
-
-  // If no specific match, return null
-  return null;
-};
-
-// Helper to get custom frequency from local storage
-const getCustomFrequency = (machineLabel: string, partTypeLabel: string, partModelLabel: string): number | null => {
-  try {
-    const storedFrequencies = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (storedFrequencies) {
-      const frequencies = JSON.parse(storedFrequencies);
-      const uniqueKey = `${machineLabel}|${partTypeLabel}|${partModelLabel}`;
-      const customDays = frequencies[uniqueKey];
-      if (customDays && Number(customDays) > 0) {
-        return Number(customDays);
-      }
-    }
-  } catch (e) {
-    console.error("Error reading custom frequency from local storage:", e);
-  }
-  return null;
-};
-// --- End Frequency Helpers ---
-
 
 const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
   const form = useForm<MaintenanceEntryFormValues>({
@@ -107,15 +53,25 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
 
   const [availableParts, setAvailableParts] = useState<Part[]>([]);
   const [availableModels, setAvailableModels] = useState<{ value: string; label: string; reorder_info: string }[]>([]);
+  const [customFrequencyFromDB, setCustomFrequencyFromDB] = useState<number | null>(null);
 
-  // Determine the base frequency (default or custom from Part Management)
+  // Determine the base frequency (default or custom from DB/Part Management)
   const defaultFrequency = getMaintenanceFrequencyDays(partType);
-  const customFrequencyFromStorage = getCustomFrequency(machine, partType, partModel);
   
-  // Calculate the effective frequency (custom input overrides storage, which overrides default)
+  // Calculate the effective frequency (custom input overrides DB, which overrides default)
   const effectiveFrequencyDays = customFrequencyInput 
     ? Number(customFrequencyInput) 
-    : (customFrequencyFromStorage || defaultFrequency);
+    : (customFrequencyFromDB || defaultFrequency);
+
+  // Effect to fetch custom frequency from DB when machine/partType/partModel changes
+  useEffect(() => {
+    if (machine && partType && partModel) {
+      getCustomFrequencyFromDB(machine, partType, partModel).then(setCustomFrequencyFromDB);
+    } else {
+      setCustomFrequencyFromDB(null);
+    }
+  }, [machine, partType, partModel]);
+
 
   // Effect to update available parts/models when machine/partType changes
   useEffect(() => {
@@ -169,8 +125,8 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
     let finalNotes = values.notes || "";
     if (values.customFrequencyInput) {
       finalNotes += ` [Form Custom Frequency: ${values.customFrequencyInput} days]`;
-    } else if (customFrequencyFromStorage) {
-      finalNotes += ` [Part Management Custom Frequency: ${customFrequencyFromStorage} days]`;
+    } else if (customFrequencyFromDB) {
+      finalNotes += ` [Part Management Custom Frequency: ${customFrequencyFromDB} days]`;
     } else if (defaultFrequency) {
       finalNotes += ` [Default Frequency: ${defaultFrequency} days]`;
     }
@@ -199,8 +155,8 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
     }
   };
 
-  const placeholderFrequency = customFrequencyFromStorage 
-    ? `Custom: ${customFrequencyFromStorage} days` 
+  const placeholderFrequency = customFrequencyFromDB 
+    ? `Custom: ${customFrequencyFromDB} days` 
     : (defaultFrequency ? `Default: ${defaultFrequency} days` : "Enter days (optional)");
 
   return (

@@ -24,6 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { maintenanceEntrySchema, MaintenanceEntryFormValues } from "@/lib/validation";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { showError } from "@/utils/toast";
+import { getMaintenanceFrequencyDays, getCustomFrequencyFromDB } from "@/utils/frequency"; // Import new utilities
 
 interface Part {
   value: string;
@@ -37,55 +38,6 @@ interface EditMaintenanceDialogProps {
   entry: MaintenanceEntry;
   onUpdate: (id: string, entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => Promise<boolean>;
 }
-
-// --- Frequency Helpers (Must match MaintenanceForm.tsx and PartManagement.tsx) ---
-const LOCAL_STORAGE_KEY = "cpap_custom_frequencies";
-
-const getMaintenanceFrequencyDays = (partTypeLabel: string): number | null => {
-  const lowerCaseLabel = partTypeLabel.toLowerCase();
-  
-  if (lowerCaseLabel.includes("filter")) {
-    if (lowerCaseLabel.includes("disposable")) return 30;
-    if (lowerCaseLabel.includes("reusable")) return 90;
-    return 30; 
-  }
-  
-  if (lowerCaseLabel.includes("tubing") || lowerCaseLabel.includes("hose")) {
-    return 90;
-  }
-  
-  if (lowerCaseLabel.includes("mask") || lowerCaseLabel.includes("cushion") || lowerCaseLabel.includes("pillow")) {
-    return 30;
-  }
-
-  if (lowerCaseLabel.includes("chamber") || lowerCaseLabel.includes("tank")) {
-    return 180;
-  }
-
-  if (lowerCaseLabel.includes("headgear") || lowerCaseLabel.includes("frame")) {
-    return 180;
-  }
-
-  return null;
-};
-
-const getCustomFrequency = (machineLabel: string, partTypeLabel: string, partModelLabel: string): number | null => {
-  try {
-    const storedFrequencies = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (storedFrequencies) {
-      const frequencies = JSON.parse(storedFrequencies);
-      const uniqueKey = `${machineLabel}|${partTypeLabel}|${partModelLabel}`;
-      const customDays = frequencies[uniqueKey];
-      if (customDays && Number(customDays) > 0) {
-        return Number(customDays);
-      }
-    }
-  } catch (e) {
-    console.error("Error reading custom frequency from local storage:", e);
-  }
-  return null;
-};
-// --- End Frequency Helpers ---
 
 // Helper to parse the machine string back into its components
 const parseMachineString = (machineString: string) => {
@@ -110,6 +62,8 @@ const parseMachineString = (machineString: string) => {
 
 const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMaintenanceDialogProps) => {
   const initialParsed = useMemo(() => parseMachineString(entry.machine), [entry.machine]);
+  const [customFrequencyFromDB, setCustomFrequencyFromDB] = useState<number | null>(null);
+
 
   const form = useForm<MaintenanceEntryFormValues>({
     resolver: zodResolver(maintenanceEntrySchema),
@@ -139,14 +93,13 @@ const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMain
   const availableModels = selectedPart?.models || [];
   const selectedModel = availableModels.find(m => m.label === partModel);
 
-  // Determine the base frequency (default or custom from Part Management)
+  // Determine the base frequency (default or custom from DB/Part Management)
   const defaultFrequency = getMaintenanceFrequencyDays(partType);
-  const customFrequencyFromStorage = getCustomFrequency(machine, partType, partModel);
   
-  // Calculate the effective frequency (custom input overrides storage, which overrides default)
+  // Calculate the effective frequency (custom input overrides DB, which overrides default)
   const effectiveFrequencyDays = customFrequencyInput 
     ? Number(customFrequencyInput) 
-    : (customFrequencyFromStorage || defaultFrequency);
+    : (customFrequencyFromDB || defaultFrequency);
 
   // Effect to reset state when a new entry is passed (e.g., dialog opens for a different entry)
   useEffect(() => {
@@ -161,6 +114,15 @@ const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMain
       customFrequencyInput: undefined,
     });
   }, [entry, reset]);
+  
+  // Effect to fetch custom frequency from DB when machine/partType/partModel changes
+  useEffect(() => {
+    if (machine && partType && partModel) {
+      getCustomFrequencyFromDB(machine, partType, partModel).then(setCustomFrequencyFromDB);
+    } else {
+      setCustomFrequencyFromDB(null);
+    }
+  }, [machine, partType, partModel]);
 
 
   // Effect to calculate next maintenance date automatically
@@ -184,8 +146,8 @@ const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMain
     // Append frequency info to notes if it's not already there or if it changed
     if (values.customFrequencyInput) {
       finalNotes += ` [Form Custom Frequency: ${values.customFrequencyInput} days]`;
-    } else if (customFrequencyFromStorage) {
-      finalNotes += ` [Part Management Custom Frequency: ${customFrequencyFromStorage} days]`;
+    } else if (customFrequencyFromDB) {
+      finalNotes += ` [Part Management Custom Frequency: ${customFrequencyFromDB} days]`;
     } else if (defaultFrequency) {
       finalNotes += ` [Default Frequency: ${defaultFrequency} days]`;
     }
@@ -202,8 +164,8 @@ const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMain
     }
   };
 
-  const placeholderFrequency = customFrequencyFromStorage 
-    ? `Custom: ${customFrequencyFromStorage} days` 
+  const placeholderFrequency = customFrequencyFromDB 
+    ? `Custom: ${customFrequencyFromDB} days` 
     : (defaultFrequency ? `Default: ${defaultFrequency} days` : "Enter days (optional)");
 
   return (
