@@ -62,6 +62,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Adding yellow for chart visualization
+        yellow: {
+          500: "hsl(45 93% 47%)",
+        }
       },
       borderRadius: {
         lg: "var(--radius)",
