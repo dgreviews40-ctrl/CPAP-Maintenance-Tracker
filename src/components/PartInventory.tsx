@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Package, Plus, Minus, Trash2 } from "lucide-react";
+import { Loader2, Package, Plus, Minus, Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { showSuccess, showError } from "@/utils/toast";
@@ -15,6 +15,8 @@ import { MachineCombobox } from "./MachineCombobox";
 import { PartCombobox } from "./PartCombobox";
 import { ModelCombobox } from "./ModelCombobox";
 import { cpapMachines } from "@/data/cpap-machines";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface InventoryItem {
   id: string;
@@ -255,51 +257,59 @@ const PartInventory = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inventory.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.machine_label}</TableCell>
-                    <TableCell>{item.part_type_label}</TableCell>
-                    <TableCell>
-                      <span className="font-medium">{item.part_model_label}</span>
-                      {item.reorder_info && (
-                        <span className="text-xs text-muted-foreground block">SKU: {item.reorder_info}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center font-bold">
-                      {item.quantity}
-                    </TableCell>
-                    <TableCell>
-                      {item.last_restock ? new Date(item.last_restock.replace(/-/g, "/")).toLocaleDateString() : "N/A"}
-                    </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                        title="Increase Quantity"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                        disabled={item.quantity <= 0}
-                        title="Decrease Quantity"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeletePart(item.id)}
-                        title="Delete Item"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {inventory.map((item) => {
+                  const needsReorder = item.quantity <= 0;
+                  return (
+                    <TableRow key={item.id} className={cn(needsReorder && "bg-red-900/10 hover:bg-red-900/20")}>
+                      <TableCell className="font-medium">{item.machine_label}</TableCell>
+                      <TableCell>{item.part_type_label}</TableCell>
+                      <TableCell>
+                        <span className="font-medium">{item.part_model_label}</span>
+                        {item.reorder_info && (
+                          <span className="text-xs text-muted-foreground block">SKU: {item.reorder_info}</span>
+                        )}
+                        {needsReorder && (
+                          <Badge variant="destructive" className="mt-1 flex items-center w-fit">
+                            <AlertTriangle className="h-3 w-3 mr-1" /> REORDER NEEDED
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className={cn("text-center font-bold", needsReorder && "text-red-500")}>
+                        {item.quantity}
+                      </TableCell>
+                      <TableCell>
+                        {item.last_restock ? new Date(item.last_restock.replace(/-/g, "/")).toLocaleDateString() : "N/A"}
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                          title="Increase Quantity (Restock)"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 0}
+                          title="Decrease Quantity"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeletePart(item.id)}
+                          title="Delete Item"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
