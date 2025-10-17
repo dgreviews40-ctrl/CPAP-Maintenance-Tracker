@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { MaintenanceEntry } from "./MaintenanceTracker";
 import { cn } from "@/lib/utils";
 import { isBefore, isWithinInterval, addDays, startOfDay } from "date-fns";
@@ -22,6 +22,7 @@ import { isBefore, isWithinInterval, addDays, startOfDay } from "date-fns";
 interface MaintenanceListProps {
   entries: MaintenanceEntry[];
   onDeleteEntry: (id: string) => void;
+  onEditEntry: (entry: MaintenanceEntry) => void; // New prop for editing
   loading: boolean;
 }
 
@@ -56,6 +57,7 @@ const getStatus = (
 const MaintenanceList = ({
   entries,
   onDeleteEntry,
+  onEditEntry,
   loading,
 }: MaintenanceListProps) => {
   if (loading) {
@@ -114,13 +116,22 @@ const MaintenanceList = ({
                 <TableCell className="max-w-xs truncate">
                   {entry.notes}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right space-x-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEditEntry(entry)}
+                    title="Edit Entry"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => onDeleteEntry(entry.id)}
+                    title="Delete Entry"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
               </TableRow>

@@ -18,6 +18,7 @@ import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDes
 import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
+import EditMaintenanceDialog from "./EditMaintenanceDialog"; // Import the new dialog
 
 export type MaintenanceEntry = {
   id: string;
@@ -63,6 +64,10 @@ const MaintenanceTracker = () => {
   const [filter, setFilter] = useState<MaintenanceFilter>("all");
   const [sortKey, setSortKey] = useState<MaintenanceSortKey>("next_maintenance");
   const [sortOrder, setSortOrder] = useState<MaintenanceSortOrder>("asc");
+
+  // State for Editing
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<MaintenanceEntry | null>(null);
 
 
   const checkAndNotify = useCallback((data: MaintenanceEntry[]) => {
@@ -158,6 +163,28 @@ const MaintenanceTracker = () => {
     return true;
   };
 
+  const updateEntry = async (id: string, entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => {
+    if (!user) {
+      showError("You must be logged in to update entries.");
+      return false;
+    }
+
+    const { error } = await supabase
+      .from("maintenance_entries")
+      .update(entry)
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error updating entry:", error);
+      showError("Failed to update maintenance entry.");
+      return false;
+    }
+
+    showSuccess("Maintenance entry updated successfully!");
+    fetchEntries(); // Re-fetch to update list, dashboard summary, and chart
+    return true;
+  };
+
   const deleteEntry = async (id: string) => {
     if (!user) {
       showError("You must be logged in to delete entries.");
@@ -179,6 +206,11 @@ const MaintenanceTracker = () => {
       // Note: DashboardSummary and MaintenanceChart will automatically re-fetch data 
       // or rely on the next full fetchEntries call if needed.
     }
+  };
+
+  const handleEdit = (entry: MaintenanceEntry) => {
+    setEditingEntry(entry);
+    setIsEditDialogOpen(true);
   };
 
   // Memoized filtered and sorted list
@@ -221,33 +253,45 @@ const MaintenanceTracker = () => {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Maintenance Tracker</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <NotificationPermission onPermissionChange={setNotificationPermission} />
-        <DashboardSummary />
-        <MaintenanceChart /> {/* Display the new chart here */}
-        <MaintenanceForm onAddEntry={addEntry} />
-        
-        <h3 className="text-xl font-semibold mb-4 mt-8">Maintenance Schedule</h3>
-        <MaintenanceControls 
-          filter={filter}
-          onFilterChange={setFilter}
-          sortKey={sortKey}
-          onSortKeyChange={setSortKey}
-          sortOrder={sortOrder}
-          onSortOrderChange={setSortOrder}
+    <>
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle>Maintenance Tracker</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NotificationPermission onPermissionChange={setNotificationPermission} />
+          <DashboardSummary />
+          <MaintenanceChart />
+          <MaintenanceForm onAddEntry={addEntry} />
+          
+          <h3 className="text-xl font-semibold mb-4 mt-8">Maintenance Schedule</h3>
+          <MaintenanceControls 
+            filter={filter}
+            onFilterChange={setFilter}
+            sortKey={sortKey}
+            onSortKeyChange={setSortKey}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+          />
+          
+          <MaintenanceList 
+            entries={filteredAndSortedEntries} 
+            onDeleteEntry={deleteEntry} 
+            onEditEntry={handleEdit} // Pass the edit handler
+            loading={loading} 
+          />
+        </CardContent>
+      </Card>
+
+      {editingEntry && (
+        <EditMaintenanceDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          entry={editingEntry}
+          onUpdate={updateEntry}
         />
-        
-        <MaintenanceList 
-          entries={filteredAndSortedEntries} 
-          onDeleteEntry={deleteEntry} 
-          loading={loading} 
-        />
-      </CardContent>
-    </Card>
+      )}
+    </>
   );
 };
 
