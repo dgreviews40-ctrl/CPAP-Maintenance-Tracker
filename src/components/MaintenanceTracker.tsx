@@ -12,7 +12,7 @@ import MaintenanceForm from "./MaintenanceForm";
 import DashboardSummary from "./DashboardSummary";
 import NotificationPermission from "./NotificationPermission";
 import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, MaintenanceSortOrder } from "./MaintenanceControls";
-import MaintenanceChart from "./MaintenanceChart"; // Import the new chart component
+import InventoryStatusChart from "./InventoryStatusChart"; // Import the new chart component
 import { supabase } from "@/lib/supabase";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
@@ -204,7 +204,7 @@ const MaintenanceTracker = () => {
     } else {
       showSuccess("Entry deleted.");
       setEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
-      // Note: DashboardSummary and MaintenanceChart will automatically re-fetch data 
+      // Note: DashboardSummary and InventoryStatusChart will automatically re-fetch data 
       // or rely on the next full fetchEntries call if needed.
     }
   };
@@ -267,7 +267,7 @@ const MaintenanceTracker = () => {
         <CardContent>
           <NotificationPermission onPermissionChange={setNotificationPermission} />
           <DashboardSummary />
-          <MaintenanceChart />
+          <InventoryStatusChart />
           <MaintenanceForm onAddEntry={addEntry} />
           
           <h3 className="text-xl font-semibold mb-4 mt-8">Maintenance Schedule</h3>
