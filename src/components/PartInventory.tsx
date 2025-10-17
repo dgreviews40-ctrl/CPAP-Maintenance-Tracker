@@ -25,6 +25,7 @@ interface InventoryItem {
   part_model_label: string;
   reorder_info: string | null;
   quantity: number;
+  reorder_threshold: number; // New field
   last_restock: string | null;
 }
 
@@ -45,6 +46,7 @@ const PartInventory = () => {
   const [partType, setPartType] = useState("");
   const [partModel, setPartModel] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [reorderThreshold, setReorderThreshold] = useState(0); // New form state
 
   const fetchInventory = useCallback(async () => {
     if (!user) return;
@@ -102,6 +104,7 @@ const PartInventory = () => {
       part_model_label: partModel,
       reorder_info: reorderInfo,
       quantity: quantity,
+      reorder_threshold: reorderThreshold, // Include threshold
       last_restock: format(new Date(), 'yyyy-MM-dd'),
     };
 
@@ -119,6 +122,7 @@ const PartInventory = () => {
       setPartType("");
       setPartModel("");
       setQuantity(1);
+      setReorderThreshold(0);
       setIsAdding(false);
       fetchInventory();
     }
@@ -145,6 +149,23 @@ const PartInventory = () => {
       showError("Failed to update quantity.");
     } else {
       showSuccess("Inventory updated!");
+      fetchInventory();
+    }
+  };
+  
+  const handleUpdateThreshold = async (id: string, newThreshold: number) => {
+    if (newThreshold < 0) return;
+
+    const { error } = await supabase
+      .from("part_inventory")
+      .update({ reorder_threshold: newThreshold })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error updating threshold:", error);
+      showError("Failed to update reorder threshold.");
+    } else {
+      showSuccess("Reorder threshold updated!");
       fetchInventory();
     }
   };
@@ -175,7 +196,7 @@ const PartInventory = () => {
       </CardHeader>
       <CardContent>
         <p className="text-muted-foreground mb-6">
-          Track the spare parts you currently have on hand.
+          Track the spare parts you currently have on hand and set reorder alerts.
         </p>
 
         <Button onClick={() => setIsAdding(!isAdding)} className="mb-6">
@@ -185,7 +206,7 @@ const PartInventory = () => {
         {isAdding && (
           <div className="border p-4 rounded-lg mb-6 space-y-4 bg-muted/50">
             <h4 className="font-semibold">Add New Part</h4>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="md:col-span-1">
                 <Label>Machine</Label>
                 <MachineCombobox 
@@ -228,6 +249,16 @@ const PartInventory = () => {
                   min="1"
                 />
               </div>
+              <div className="space-y-1">
+                <Label htmlFor="threshold">Reorder Threshold</Label>
+                <Input
+                  id="threshold"
+                  type="number"
+                  value={reorderThreshold}
+                  onChange={(e) => setReorderThreshold(Math.max(0, Number(e.target.value)))}
+                  min="0"
+                />
+              </div>
             </div>
             <Button onClick={handleAddPart} disabled={!machine || !partType || !partModel || quantity <= 0}>
               Save Part
@@ -252,13 +283,14 @@ const PartInventory = () => {
                   <TableHead>Part Type</TableHead>
                   <TableHead>Model / SKU</TableHead>
                   <TableHead className="text-center">Quantity</TableHead>
+                  <TableHead className="text-center">Threshold</TableHead>
                   <TableHead>Last Restock</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {inventory.map((item) => {
-                  const needsReorder = item.quantity <= 0;
+                  const needsReorder = item.quantity <= item.reorder_threshold;
                   return (
                     <TableRow key={item.id} className={cn(needsReorder && "bg-red-900/10 hover:bg-red-900/20")}>
                       <TableCell className="font-medium">{item.machine_label}</TableCell>
@@ -276,6 +308,16 @@ const PartInventory = () => {
                       </TableCell>
                       <TableCell className={cn("text-center font-bold", needsReorder && "text-red-500")}>
                         {item.quantity}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Input
+                          type="number"
+                          value={item.reorder_threshold}
+                          onChange={(e) => handleUpdateThreshold(item.id, Math.max(0, Number(e.target.value)))}
+                          onBlur={(e) => handleUpdateThreshold(item.id, Math.max(0, Number(e.target.value)))}
+                          min="0"
+                          className="w-16 text-center h-8 p-1"
+                        />
                       </TableCell>
                       <TableCell>
                         {item.last_restock ? new Date(item.last_restock.replace(/-/g, "/")).toLocaleDateString() : "N/A"}
