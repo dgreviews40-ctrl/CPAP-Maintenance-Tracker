@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 // Define the schema for profile updates
 const profileSchema = z.object({
@@ -26,6 +27,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const ProfileForm = () => {
   const { user } = useAuth();
+  const navigate = useNavigate(); // Initialize navigate
   const [loading, setLoading] = useState(true);
 
   const form = useForm<ProfileFormValues>({
@@ -85,6 +87,8 @@ const ProfileForm = () => {
       showError("Failed to save profile changes.");
     } else {
       showSuccess("Profile updated successfully!");
+      // Redirect to the main page after successful save
+      navigate("/");
     }
   };
 
