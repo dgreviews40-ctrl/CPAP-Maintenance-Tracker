@@ -1,16 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, History, Calendar } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, Calendar } from "lucide-react";
 import { useUserParts } from "@/hooks/use-user-parts";
 import { format, parseISO } from "date-fns";
 import { Separator } from "@/components/ui/separator";
-
-interface MaintenanceHistory {
-  last_maintenance: string;
-}
 
 interface PartHistory {
   uniqueKey: string;

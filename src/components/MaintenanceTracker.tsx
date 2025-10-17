@@ -15,7 +15,7 @@ import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, Maintenance
 import InventoryStatusChart from "./InventoryStatusChart"; 
 import PartReplacementHistory from "./PartReplacementHistory";
 import MaintenanceTimeline from "./MaintenanceTimeline"; 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/hooks/use-auth";

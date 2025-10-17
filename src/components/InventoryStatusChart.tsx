@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/lib/supabase";
 import {
   BarChart,
   Bar,
@@ -13,7 +12,6 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Warehouse } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
 import { useUserParts } from "@/hooks/use-user-parts";
 
 interface ChartData {
@@ -23,7 +21,6 @@ interface ChartData {
 }
 
 const InventoryStatusChart = () => {
-  const { user } = useAuth();
   const { userParts, loading: loadingUserParts } = useUserParts();
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,11 +28,14 @@ const InventoryStatusChart = () => {
   useEffect(() => {
     if (loadingUserParts) return;
 
-    // Transform userParts data for the chart
-    const data: ChartData[] = userParts.map((part) => ({
+    // Filter for parts that are actually in inventory (have quantity/threshold defined)
+    const inventoryParts = userParts.filter(p => p.quantity !== undefined && p.reorderThreshold !== undefined);
+
+    // Transform filtered data for the chart
+    const data: ChartData[] = inventoryParts.map((part) => ({
       name: `${part.modelLabel} (${part.machineLabel})`,
-      quantity: part.quantity,
-      threshold: part.reorderThreshold,
+      quantity: part.quantity!,
+      threshold: part.reorderThreshold!,
     }));
 
     setChartData(data);

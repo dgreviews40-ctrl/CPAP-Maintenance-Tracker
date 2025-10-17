@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./use-auth";
 import { cpapMachines } from "@/data/cpap-machines";
 
@@ -11,12 +11,15 @@ interface UniquePartKey {
   modelLabel: string;
 }
 
-interface PartData {
+export interface PartData {
   machineLabel: string;
   partTypeLabel: string;
   modelLabel: string;
   reorderInfo: string;
   uniqueKey: string;
+  // Inventory fields (optional, as a part might only exist in maintenance history)
+  quantity?: number;
+  reorderThreshold?: number;
 }
 
 // Helper to parse the machine string from maintenance_entries
@@ -51,6 +54,7 @@ export function useUserParts() {
     
     const uniqueKeys = new Set<string>();
     const partsMap = new Map<string, PartData>();
+    const inventoryMap = new Map<string, { quantity: number, reorder_threshold: number }>();
 
     // 1. Fetch unique parts from Maintenance Entries
     const { data: maintenanceData, error: maintenanceError } = await supabase
@@ -69,10 +73,10 @@ export function useUserParts() {
       });
     }
 
-    // 2. Fetch unique parts from Part Inventory
+    // 2. Fetch unique parts AND inventory data from Part Inventory
     const { data: inventoryData, error: inventoryError } = await supabase
       .from("part_inventory")
-      .select("machine_label, part_type_label, part_model_label, reorder_info");
+      .select("machine_label, part_type_label, part_model_label, reorder_info, quantity, reorder_threshold");
 
     if (inventoryError) {
       console.error("Error fetching inventory parts:", inventoryError);
@@ -80,6 +84,7 @@ export function useUserParts() {
       inventoryData.forEach(item => {
         const key = `${item.machine_label}|${item.part_type_label}|${item.part_model_label}`;
         uniqueKeys.add(key);
+        inventoryMap.set(key, { quantity: item.quantity, reorder_threshold: item.reorder_threshold });
       });
     }
 
@@ -90,6 +95,8 @@ export function useUserParts() {
       const machineData = cpapMachines.find(m => m.label === machineLabel);
       const partTypeData = machineData?.parts.find(p => p.label === partTypeLabel);
       const modelData = partTypeData?.models.find(m => m.label === modelLabel);
+      
+      const inventoryStatus = inventoryMap.get(key);
 
       if (modelData) {
         partsMap.set(key, {
@@ -98,6 +105,10 @@ export function useUserParts() {
           modelLabel,
           reorderInfo: modelData.reorder_info,
           uniqueKey: key,
+          ...(inventoryStatus && { 
+            quantity: inventoryStatus.quantity, 
+            reorderThreshold: inventoryStatus.reorder_threshold 
+          }),
         });
       }
     });
