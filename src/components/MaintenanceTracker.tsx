@@ -12,13 +12,14 @@ import MaintenanceForm from "./MaintenanceForm";
 import DashboardSummary from "./DashboardSummary";
 import NotificationPermission from "./NotificationPermission";
 import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, MaintenanceSortOrder } from "./MaintenanceControls";
-import InventoryStatusChart from "./InventoryStatusChart"; // Import the new chart component
+import InventoryStatusChart from "./InventoryStatusChart"; 
+import PartReplacementHistory from "./PartReplacementHistory"; // Import the new history component
 import { supabase } from "@/lib/supabase";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import EditMaintenanceDialog from "./EditMaintenanceDialog"; // Import the new dialog
+import EditMaintenanceDialog from "./EditMaintenanceDialog"; 
 
 export type MaintenanceEntry = {
   id: string;
@@ -268,6 +269,7 @@ const MaintenanceTracker = () => {
           <NotificationPermission onPermissionChange={setNotificationPermission} />
           <DashboardSummary />
           <InventoryStatusChart />
+          <PartReplacementHistory /> {/* Added the new history component */}
           <MaintenanceForm onAddEntry={addEntry} />
           
           <h3 className="text-xl font-semibold mb-4 mt-8">Maintenance Schedule</h3>
