@@ -69,7 +69,18 @@ const PartReplacementHistory = () => {
       const { machine, partType, partModel } = parseMachineStringForHistory(entry.machine);
       if (machine && partType && partModel) {
         const key = `${machine}|${partType}|${partModel}`;
-        const date = parseISO(entry.last_maintenance.replace(/-/g, "/"));
+        
+        // Ensure date string is present and handle timezone adjustment for parsing
+        const dateString = entry.last_maintenance?.replace(/-/g, "/");
+        if (!dateString) return;
+
+        const date = parseISO(dateString);
+        
+        // Validate the parsed date object before pushing
+        if (isNaN(date.getTime())) {
+            console.warn("Skipping invalid date entry:", entry);
+            return;
+        }
         
         if (!historyMap.has(key)) {
           historyMap.set(key, []);
