@@ -8,6 +8,7 @@ import MaintenanceLog from "@/components/MaintenanceLog";
 import Inventory from "@/components/Inventory";
 import Settings from "@/components/Settings";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import Layout from "@/components/Layout"; // Import Layout
 
 const Index = () => {
   const [searchParams] = useSearchParams();
@@ -34,30 +35,32 @@ const Index = () => {
   }, [searchParams, navigate, location.pathname]);
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-      
-      {/* Tabs component manages the context, using URL state */}
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        {/* DashboardTabs now only renders the TabsList and Triggers */}
-        <DashboardTabs /> 
+    <Layout>
+      <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+        
+        {/* Tabs component manages the context, using URL state */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          {/* DashboardTabs now only renders the TabsList and Triggers */}
+          <DashboardTabs /> 
 
-        <div className="mt-6">
-          <TabsContent value="overview">
-            <Overview />
-          </TabsContent>
-          <TabsContent value="maintenance">
-            <MaintenanceLog />
-          </TabsContent>
-          <TabsContent value="inventory">
-            <Inventory />
-          </TabsContent>
-          <TabsContent value="settings">
-            <Settings />
-          </TabsContent>
-        </div>
-      </Tabs>
-    </div>
+          <div className="mt-6">
+            <TabsContent value="overview">
+              <Overview />
+            </TabsContent>
+            <TabsContent value="maintenance">
+              <MaintenanceLog />
+            </TabsContent>
+            <TabsContent value="inventory">
+              <Inventory />
+            </TabsContent>
+            <TabsContent value="settings">
+              <Settings />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
+    </Layout>
   );
 };
 
