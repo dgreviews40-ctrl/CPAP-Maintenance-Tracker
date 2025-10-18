@@ -9,7 +9,6 @@ import { MaintenanceEntry } from "./MaintenanceTracker";
 import { MachineCombobox } from "./MachineCombobox";
 import { PartCombobox } from "./PartCombobox";
 import { ModelCombobox } from "./ModelCombobox";
-import { cpapMachines } from "@/data/cpap-machines";
 import { addDays, format } from "date-fns";
 import {
   Dialog,
@@ -24,7 +23,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { maintenanceEntrySchema, MaintenanceEntryFormValues } from "@/lib/validation";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { showError } from "@/utils/toast";
-import { getMaintenanceFrequencyDays, getCustomFrequencyFromDB } from "@/utils/frequency"; // Import new utilities
+import { getMaintenanceFrequencyDays, getCustomFrequencyFromDB } from "@/utils/frequency";
+import { useAllMachines } from "@/hooks/use-all-machines"; // Import the new hook
 
 interface Part {
   value: string;
@@ -61,6 +61,7 @@ const parseMachineString = (machineString: string) => {
 
 
 const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMaintenanceDialogProps) => {
+  const { allMachines } = useAllMachines(); // Use the new hook
   const initialParsed = useMemo(() => parseMachineString(entry.machine), [entry.machine]);
   const [customFrequencyFromDB, setCustomFrequencyFromDB] = useState<number | null>(null);
 
@@ -87,7 +88,7 @@ const EditMaintenanceDialog = ({ open, onOpenChange, entry, onUpdate }: EditMain
   const customFrequencyInput = watch("customFrequencyInput");
 
   // Derived state for combobox options
-  const machineData = cpapMachines.find(m => m.label === machine);
+  const machineData = allMachines.find(m => m.label === machine); // Use allMachines
   const availableParts: Part[] = machineData?.parts || [];
   const selectedPart = availableParts.find(p => p.label === partType);
   const availableModels = selectedPart?.models || [];

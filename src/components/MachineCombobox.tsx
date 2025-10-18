@@ -18,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { cpapMachines } from "@/data/cpap-machines"
+import { useAllMachines } from "@/hooks/use-all-machines" // Import the new hook
 
 interface MachineComboboxProps {
   value: string;
@@ -27,6 +27,22 @@ interface MachineComboboxProps {
 
 export function MachineCombobox({ value, onChange }: MachineComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const { allMachines, loading } = useAllMachines();
+
+  if (loading) {
+    // Render a disabled button while loading
+    return (
+      <Button
+        variant="outline"
+        role="combobox"
+        className="w-full justify-between"
+        disabled
+      >
+        Loading machines...
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -38,7 +54,7 @@ export function MachineCombobox({ value, onChange }: MachineComboboxProps) {
           className="w-full justify-between"
         >
           {value
-            ? cpapMachines.find((machine) => machine.label === value)?.label
+            ? allMachines.find((machine) => machine.label === value)?.label
             : "Select machine..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -49,7 +65,7 @@ export function MachineCombobox({ value, onChange }: MachineComboboxProps) {
           <CommandList>
             <CommandEmpty>No machine found.</CommandEmpty>
             <CommandGroup>
-              {cpapMachines.map((machine) => (
+              {allMachines.map((machine) => (
                 <CommandItem
                   key={machine.value}
                   value={machine.label}

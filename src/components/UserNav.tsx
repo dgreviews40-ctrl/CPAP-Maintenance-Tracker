@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
-import { LogOut, User, Settings } from "lucide-react";
+import { LogOut, User, Settings, Wrench } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,7 +98,11 @@ const UserNav = () => {
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => navigate("/settings")}>
             <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+            <span>Profile Settings</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate("/machine-management")}>
+            <Wrench className="mr-2 h-4 w-4" />
+            <span>Machine Management</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

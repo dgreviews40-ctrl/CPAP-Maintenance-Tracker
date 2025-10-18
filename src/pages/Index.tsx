@@ -2,9 +2,10 @@
 
 import MaintenanceTracker from "@/components/MaintenanceTracker";
 import FrequencyManagement from "@/components/FrequencyManagement";
-import PartInventory from "@/components/PartInventory";
+import InventoryAlert from "@/components/InventoryAlert"; // Import the new alert component
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Layout from "@/components/Layout";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
@@ -17,11 +18,15 @@ const Index = () => {
           </p>
         </header>
         <main className="w-full max-w-4xl mx-auto">
+          <InventoryAlert /> {/* Display global alert here */}
           <Tabs defaultValue="tracker">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="tracker">Maintenance Tracker</TabsTrigger>
               <TabsTrigger value="frequency">Frequency Customization</TabsTrigger>
-              <TabsTrigger value="inventory">Part Inventory</TabsTrigger>
+              {/* Update Inventory tab to be a link */}
+              <TabsTrigger value="inventory" asChild>
+                <Link to="/inventory">Part Inventory</Link>
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="tracker">
               <MaintenanceTracker />
@@ -29,9 +34,7 @@ const Index = () => {
             <TabsContent value="frequency">
               <FrequencyManagement />
             </TabsContent>
-            <TabsContent value="inventory">
-              <PartInventory />
-            </TabsContent>
+            {/* Removed TabsContent for inventory */}
           </Tabs>
         </main>
       </div>

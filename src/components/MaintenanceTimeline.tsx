@@ -8,12 +8,17 @@ import { useUserParts } from "@/hooks/use-user-parts";
 import { format, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 
+interface ReplacementEvent {
+  date: Date;
+  intervalDays: number | null; // Days since the previous replacement
+}
+
 interface PartHistory {
   uniqueKey: string;
   machineLabel: string;
   partTypeLabel: string;
   modelLabel: string;
-  history: Date[];
+  history: ReplacementEvent[];
 }
 
 // Helper to parse the machine string back into its components
@@ -29,7 +34,7 @@ const parseMachineStringForHistory = (machineString: string) => {
   return { machine, partType, partModel };
 };
 
-// --- Data Fetching Logic (Duplicated from PartReplacementHistory for self-containment) ---
+// --- Data Fetching Logic ---
 
 const useMaintenanceHistory = () => {
   const { userParts, loading: loadingUserParts } = useUserParts();
@@ -48,7 +53,7 @@ const useMaintenanceHistory = () => {
     const { data, error } = await supabase
       .from("maintenance_entries")
       .select("machine, last_maintenance")
-      .order("last_maintenance", { ascending: false });
+      .order("last_maintenance", { ascending: true }); // Ascending order is crucial for interval calculation
 
     if (error) {
       console.error("Error fetching maintenance history:", error);
@@ -56,7 +61,7 @@ const useMaintenanceHistory = () => {
       return;
     }
 
-    const historyMap = new Map<string, Date[]>();
+    const rawHistoryMap = new Map<string, Date[]>();
 
     data.forEach((entry) => {
       const { machine, partType, partModel } = parseMachineStringForHistory(entry.machine);
@@ -73,20 +78,30 @@ const useMaintenanceHistory = () => {
             return;
         }
         
-        if (!historyMap.has(key)) {
-          historyMap.set(key, []);
+        if (!rawHistoryMap.has(key)) {
+          rawHistoryMap.set(key, []);
         }
-        historyMap.get(key)?.push(date);
+        rawHistoryMap.get(key)?.push(date);
       }
     });
 
     const processedHistory: PartHistory[] = userParts.map(part => {
-      const dates = historyMap.get(part.uniqueKey) || [];
-      dates.sort((a, b) => b.getTime() - a.getTime());
+      const rawDates = rawHistoryMap.get(part.uniqueKey) || [];
+      // Ensure dates are sorted chronologically (ascending)
+      rawDates.sort((a, b) => a.getTime() - b.getTime());
+      
+      const replacementEvents: ReplacementEvent[] = rawDates.map((date, index) => {
+        let intervalDays: number | null = null;
+        if (index > 0) {
+          // Calculate days since the previous replacement
+          intervalDays = differenceInDays(date, rawDates[index - 1]);
+        }
+        return { date, intervalDays };
+      });
       
       return {
         ...part,
-        history: dates, // Keep all history for timeline view
+        history: replacementEvents,
       };
     }).filter(p => p.history.length > 0);
 
@@ -120,7 +135,8 @@ const MaintenanceTimeline = () => {
     let maxDate: Date | null = null;
 
     historyData.forEach(part => {
-      part.history.forEach(date => {
+      part.history.forEach(event => {
+        const date = event.date;
         if (!minDate || date < minDate) minDate = date;
         if (!maxDate || date > maxDate) maxDate = date;
       });
@@ -213,22 +229,26 @@ const MaintenanceTimeline = () => {
                     <div className="absolute inset-0 bg-muted/50 rounded-full h-2 top-1/2 -translate-y-1/2" />
                     
                     {/* Replacement Markers */}
-                    {part.history.map((date, index) => {
-                      const daysFromStart = differenceInDays(date, timeRange.start);
+                    {part.history.map((event, index) => {
+                      const daysFromStart = differenceInDays(event.date, timeRange.start);
                       const position = daysFromStart * dayWidth;
+                      
+                      const tooltipText = event.intervalDays !== null
+                        ? `Replaced: ${format(event.date, 'MMM dd, yyyy')} (${event.intervalDays} days interval)`
+                        : `First Replacement: ${format(event.date, 'MMM dd, yyyy')}`;
                       
                       return (
                         <div 
                           key={index}
                           style={{ left: `${position}px` }}
                           className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-6 w-6 bg-primary rounded-full flex items-center justify-center shadow-lg cursor-pointer group"
-                          title={`Replaced: ${format(date, 'MMM dd, yyyy')}`}
+                          title={tooltipText}
                         >
                           <CalendarDays className="h-3 w-3 text-primary-foreground" />
                           
                           {/* Tooltip/Label */}
                           <span className="absolute bottom-full mb-2 p-1 px-2 bg-card border border-border rounded-md text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                            {format(date, 'MMM dd, yyyy')}
+                            {tooltipText}
                           </span>
                         </div>
                       );

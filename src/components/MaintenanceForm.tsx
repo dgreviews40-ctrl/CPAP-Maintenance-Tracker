@@ -9,7 +9,6 @@ import { MaintenanceEntry } from "./MaintenanceTracker";
 import { MachineCombobox } from "./MachineCombobox";
 import { PartCombobox } from "./PartCombobox";
 import { ModelCombobox } from "./ModelCombobox";
-import { cpapMachines } from "@/data/cpap-machines";
 import { addDays, format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,7 +16,8 @@ import { maintenanceEntrySchema, MaintenanceEntryFormValues } from "@/lib/valida
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { showError } from "@/utils/toast";
 import { decrementInventory } from "@/utils/inventory";
-import { getMaintenanceFrequencyDays, getCustomFrequencyFromDB } from "@/utils/frequency"; // Import new utilities
+import { getMaintenanceFrequencyDays, getCustomFrequencyFromDB } from "@/utils/frequency";
+import { useAllMachines } from "@/hooks/use-all-machines"; // Import the new hook
 
 interface Part {
   value: string;
@@ -30,6 +30,8 @@ interface MaintenanceFormProps {
 }
 
 const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
+  const { allMachines } = useAllMachines(); // Use the new hook
+
   const form = useForm<MaintenanceEntryFormValues>({
     resolver: zodResolver(maintenanceEntrySchema),
     defaultValues: {
@@ -75,7 +77,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
 
   // Effect to update available parts/models when machine/partType changes
   useEffect(() => {
-    const machineData = cpapMachines.find(m => m.label === machine);
+    const machineData = allMachines.find(m => m.label === machine); // Use allMachines
     
     if (machineData) {
       setAvailableParts(machineData.parts as Part[]);
@@ -101,7 +103,7 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
       setValue("partModel", "");
     }
     
-  }, [machine, partType, setValue]);
+  }, [machine, partType, setValue, allMachines]); // Dependency on allMachines added
 
 
   // Effect to calculate next maintenance date automatically

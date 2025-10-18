@@ -6,6 +6,9 @@ import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/use-auth";
 import { Toaster } from "@/components/ui/toaster";
+import Settings from "./pages/Settings";
+import Inventory from "./pages/Inventory";
+import MachineManagement from "./pages/MachineManagement"; // Import the new page
 
 function App() {
   return (
@@ -16,6 +19,9 @@ function App() {
           {/* Use ProtectedRoute as a wrapper for routes that require authentication */}
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Index />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/machine-management" element={<MachineManagement />} />
           </Route>
         </Routes>
       </Router>
