@@ -2,6 +2,7 @@
 
 import { Wind } from "lucide-react";
 import UserNav from "./UserNav";
+import { ThemeToggle } from "./ThemeToggle"; // Import ThemeToggle
 
 const Header = () => {
   return (
@@ -13,7 +14,10 @@ const Header = () => {
             CPAP Maintenance Tracker
           </h1>
         </div>
-        <UserNav />
+        <div className="flex items-center space-x-2">
+          <ThemeToggle />
+          <UserNav />
+        </div>
       </div>
     </header>
   );
