@@ -11,28 +11,32 @@ import Profile from "./pages/Profile";
 import MachineManagement from "./pages/MachineManagement";
 import Reports from "./pages/Reports";
 import ToastProvider from "./components/ToastProvider";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/query-client";
 
 function App() {
   return (
-    <Router>
-      <ToastProvider />
-      <AuthProvider>
-        <ProfileProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            
-            {/* Protected Routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/machine-management" element={<MachineManagement />} />
-              <Route path="/reports" element={<Reports />} />
-            </Route>
-          </Routes>
-        </ProfileProvider>
-      </AuthProvider>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <ToastProvider />
+        <AuthProvider>
+          <ProfileProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              
+              {/* Protected Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/machine-management" element={<MachineManagement />} />
+                <Route path="/reports" element={<Reports />} />
+              </Route>
+            </Routes>
+          </ProfileProvider>
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
