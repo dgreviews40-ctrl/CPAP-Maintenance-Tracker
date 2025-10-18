@@ -16,76 +16,17 @@ interface PartImageUploaderProps {
   uniqueKey: string;
   currentImageUrl?: string;
   onImageUpdated: () => void;
+  // New prop for handling file upload triggered externally
+  onFileUpload: (file: File) => Promise<void>;
+  isUploading: boolean;
 }
 
-export interface PartImageUploaderRef {
-  triggerFileInput: () => void;
-}
-
-const PartImageUploader = React.forwardRef<PartImageUploaderRef, PartImageUploaderProps>(({ uniqueKey, currentImageUrl, onImageUpdated }, ref) => {
+const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated, onFileUpload, isUploading }: PartImageUploaderProps) => {
   const { user } = useAuth();
   const { updateImage } = useCustomPartImages();
-  const [isUploading, setIsUploading] = useState(false);
   const [urlInput, setUrlInput] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); // Still needed for manual trigger button
 
-  // Expose the file input trigger function via ref
-  useImperativeHandle(ref, () => ({
-    triggerFileInput: () => {
-      fileInputRef.current?.click();
-    },
-  }));
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user) {
-      showError("You must be logged in to upload images.");
-      return;
-    }
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    
-    // Define the path in storage: user_id/unique_key_hash.ext
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${user.id}/${uniqueKey.replace(/\|/g, '_')}.${fileExt}`;
-
-    try {
-      // 1. Upload file to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
-        .from('part-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true, // Overwrite existing file
-        });
-
-      if (uploadError) throw uploadError;
-
-      // 2. Get the public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('part-images')
-        .getPublicUrl(filePath);
-        
-      if (!publicUrlData.publicUrl) throw new Error("Failed to retrieve public URL.");
-
-      // 3. Save the public URL to the database
-      const success = await updateImage(uniqueKey, publicUrlData.publicUrl);
-      
-      if (success) {
-        onImageUpdated();
-      }
-
-    } catch (error) {
-      console.error("Upload or save error:", error);
-      showError("Image upload failed. Please try again.");
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''; // Clear file input
-      }
-    }
-  };
-  
   const handleUrlSave = async () => {
     if (!user) {
       showError("You must be logged in to save image URLs.");
@@ -96,24 +37,22 @@ const PartImageUploader = React.forwardRef<PartImageUploaderRef, PartImageUpload
       return;
     }
     
-    setIsUploading(true);
+    // Use the updateImage mutation directly
     const success = await updateImage(uniqueKey, urlInput);
     if (success) {
       onImageUpdated();
       setUrlInput("");
     }
-    setIsUploading(false);
   };
   
   const handleResetImage = async () => {
     if (!window.confirm("Are you sure you want to reset the custom image? This will revert to the default placeholder.")) return;
     
-    setIsUploading(true);
+    // Use the updateImage mutation directly
     const success = await updateImage(uniqueKey, null);
     if (success) {
       onImageUpdated();
     }
-    setIsUploading(false);
   };
 
   const isCustomImage = currentImageUrl && currentImageUrl !== '/placeholder.svg';
@@ -145,15 +84,7 @@ const PartImageUploader = React.forwardRef<PartImageUploaderRef, PartImageUpload
 
         <div className="space-y-2">
           <Label htmlFor="file-upload-button">Upload Image File (JPG, PNG)</Label>
-          <Input 
-            id="file-upload" 
-            type="file" 
-            accept="image/png, image/jpeg"
-            onChange={handleFileUpload}
-            ref={fileInputRef}
-            disabled={isUploading}
-            className="hidden" // Hide the default input
-          />
+          {/* Hidden input is now in PartDetailView, this button triggers that input via ref */}
           <Button 
             id="file-upload-button"
             onClick={() => fileInputRef.current?.click()} 
@@ -163,6 +94,22 @@ const PartImageUploader = React.forwardRef<PartImageUploaderRef, PartImageUpload
           >
             <Upload className="h-4 w-4 mr-2" /> Select File to Upload
           </Button>
+          {/* We still need a hidden input here to handle the file selection from this button */}
+          <Input 
+            id="file-upload-internal" 
+            type="file" 
+            accept="image/png, image/jpeg"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                onFileUpload(file);
+              }
+              e.target.value = ''; // Clear input
+            }}
+            ref={fileInputRef}
+            disabled={isUploading}
+            className="hidden"
+          />
         </div>
         
         <div className="flex items-center space-x-2">
@@ -194,6 +141,6 @@ const PartImageUploader = React.forwardRef<PartImageUploaderRef, PartImageUpload
       </CardContent>
     </Card>
   );
-});
+};
 
 export default PartImageUploader;

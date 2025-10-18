@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Package, Calendar, Wrench, AlertTriangle, Info, Image as ImageIcon } from "lucide-react";
@@ -12,9 +12,12 @@ import { format, parseISO } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import PartImageUploader, { PartImageUploaderRef } from "./PartImageUploader";
+import PartImageUploader from "./PartImageUploader";
 import { useRQClient } from "@/hooks/use-query-client";
 import { useAllMachines } from "@/hooks/use-all-machines";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { showError } from "@/utils/toast";
 
 interface PartDetailViewProps {
   uniqueKey: string;
@@ -27,13 +30,15 @@ const parseUniqueKey = (key: string) => {
 };
 
 const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
+  const { user } = useAuth();
   const { userParts, loading: loadingParts } = useUserParts();
   const { allMachines, loading: loadingAllMachines } = useAllMachines();
   const { frequencies, loading: loadingFrequencies } = useCustomFrequencies();
   const { history, loading: loadingHistory } = useMaintenanceHistory();
   const queryClient = useRQClient();
   
-  const uploaderRef = useRef<PartImageUploaderRef>(null); // Ref for the uploader component
+  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for the hidden file input
+  const [isUploading, setIsUploading] = useState(false);
 
   const loading = loadingParts || loadingFrequencies || loadingHistory || loadingAllMachines;
 
@@ -74,6 +79,62 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
     queryClient.invalidateQueries({ queryKey: ['customPartImages'] });
     queryClient.invalidateQueries({ queryKey: ['userParts'] });
   };
+  
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (!user) {
+      showError("You must be logged in to upload images.");
+      return;
+    }
+
+    setIsUploading(true);
+    
+    // Define the path in storage: user_id/unique_key_hash.ext
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${user.id}/${uniqueKey.replace(/\|/g, '_')}.${fileExt}`;
+
+    try {
+      // 1. Upload file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('part-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true, // Overwrite existing file
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get the public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('part-images')
+        .getPublicUrl(filePath);
+        
+      if (!publicUrlData.publicUrl) throw new Error("Failed to retrieve public URL.");
+
+      // 3. Save the public URL to the database
+      const { error: dbError } = await supabase
+        .from("part_images")
+        .upsert([{ user_id: user.id, unique_part_key: uniqueKey, image_url: publicUrlData.publicUrl }], { onConflict: 'unique_part_key' });
+      
+      if (dbError) throw dbError;
+
+      handleImageUpdated();
+    } catch (error) {
+      console.error("Upload or save error:", error);
+      showError("Image upload failed. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  }, [user, uniqueKey, queryClient]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''; // Clear file input
+    }
+  };
 
   if (loading) {
     return (
@@ -104,6 +165,16 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
   return (
     <div className="space-y-8">
       
+      {/* Hidden file input for the clickable image area */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        accept="image/png, image/jpeg"
+        className="hidden"
+        disabled={isUploading}
+      />
+      
       {/* Image and Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
@@ -117,9 +188,14 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
               <AspectRatio 
                 ratio={1 / 1} 
                 className="bg-muted rounded-lg overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => uploaderRef.current?.triggerFileInput()} // Trigger file input on click
+                onClick={() => fileInputRef.current?.click()} // Trigger file input on click
               >
-                {partDetails.imageUrl ? (
+                {isUploading ? (
+                  <div className="flex flex-col items-center text-primary">
+                    <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                    <p>Uploading...</p>
+                  </div>
+                ) : partDetails.imageUrl ? (
                   <img 
                     src={partDetails.imageUrl} 
                     alt={`${partDetails.modelLabel} image`} 
@@ -135,12 +211,13 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
             </CardContent>
           </Card>
           
-          {/* Image Uploader (Pass ref here) */}
+          {/* Image Uploader (Now handles URL input and internal file button) */}
           <PartImageUploader 
-            ref={uploaderRef} // Pass the ref
             uniqueKey={uniqueKey} 
             currentImageUrl={partDetails.imageUrl}
             onImageUpdated={handleImageUpdated}
+            onFileUpload={handleFileUpload}
+            isUploading={isUploading}
           />
         </div>
         
