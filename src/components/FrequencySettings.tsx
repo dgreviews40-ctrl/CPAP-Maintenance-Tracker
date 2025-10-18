@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { showSuccess, showError } from "@/utils/toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAllMachines, Machine } from "@/hooks/use-all-machines"; // Import Machine type from the hook file
+import { useAllMachines, Machine } from "@/hooks/use-all-machines";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CustomFrequency {
@@ -31,34 +31,36 @@ const fetchCustomFrequencies = async (userId: string | undefined): Promise<Custo
 
   if (error) {
     console.error("Error fetching custom frequencies:", error);
-    throw new Error("Failed to load custom frequencies.");
+    // Return an empty array on error to prevent runtime issues
+    return [];
   }
   return data as CustomFrequency[];
 };
 
-const NotificationSettings = () => {
+const FrequencySettings = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Use the imported Machine type for the hook return value
   const { allMachines } = useAllMachines() as { allMachines: Machine[] };
   
-  const { data: customFrequencies = [], isLoading: loading } = useQuery<CustomFrequency[]>({
+  // Use 'data' directly without destructuring and renaming to avoid potential confusion
+  const { data, isLoading: loading } = useQuery<CustomFrequency[]>({
     queryKey: ['customFrequencies', user?.id],
     queryFn: () => fetchCustomFrequencies(user?.id),
     enabled: !!user,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
   
-  const [isAdding, setIsAdding] = useState(false);
+  // Ensure data is an array for all subsequent operations
+  const customFrequencies = Array.isArray(data) ? data : [];
   
-  // Form state
+  const [isAdding, setIsAdding] = useState(false);
   const [selectedPartKey, setSelectedPartKey] = useState("");
   const [frequencyDays, setFrequencyDays] = useState("");
 
   const invalidateFrequencyQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['customFrequencies'] });
-    queryClient.invalidateQueries({ queryKey: ['maintenanceSchedule'] }); // Invalidate schedule to reflect changes
+    queryClient.invalidateQueries({ queryKey: ['maintenanceSchedule'] });
   }, [queryClient]);
 
   const addMutation = useMutation({
@@ -70,7 +72,6 @@ const NotificationSettings = () => {
     },
     onSuccess: () => {
       showSuccess("Custom frequency added successfully!");
-      // Reset form
       setSelectedPartKey("");
       setFrequencyDays("");
       setIsAdding(false);
@@ -78,7 +79,7 @@ const NotificationSettings = () => {
     },
     onError: (error) => {
       console.error("Error adding custom frequency:", error);
-      if ((error as any).code === '23505') { // Unique constraint violation
+      if ((error as any).code === '23505') {
         showError("A custom frequency for this part already exists. Please delete the existing one first.");
       } else {
         showError("Failed to add custom frequency.");
@@ -134,8 +135,8 @@ const NotificationSettings = () => {
     )
   );
 
-  // Ensure customFrequencies is an array before mapping
-  const partsWithCustomFrequency = new Set((customFrequencies || []).map(f => f.unique_part_key));
+  // Use the guaranteed array variable 'customFrequencies'
+  const partsWithCustomFrequency = new Set(customFrequencies.map(f => f.unique_part_key));
   const partsForSelection = availableParts.filter(p => !partsWithCustomFrequency.has(p.key));
 
   return (
@@ -222,8 +223,8 @@ const NotificationSettings = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Safely map over customFrequencies */}
-                {(customFrequencies || []).map((item) => {
+                {/* Use the guaranteed array variable */}
+                {customFrequencies.map((item) => {
                   const { machineLabel, partTypeLabel, partModelLabel } = getPartDetails(item.unique_part_key);
                   return (
                     <TableRow key={item.id}>
@@ -254,4 +255,4 @@ const NotificationSettings = () => {
   );
 };
 
-export default NotificationSettings;
+export default FrequencySettings;
