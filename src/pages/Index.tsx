@@ -11,6 +11,7 @@ import NotificationCenter from "@/components/NotificationCenter"; // New import
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
+import MaintenanceForecastChart from "@/components/MaintenanceForecastChart"; // New import
 
 const Index = () => {
   return (
@@ -36,7 +37,7 @@ const Index = () => {
             {/* Left Column: Charts (2/3 width on large screens) */}
             <div className="lg:col-span-2 space-y-6">
               <InventoryStatusChart />
-              <PartUsageRateChart />
+              <MaintenanceForecastChart /> {/* Replaced PartUsageRateChart */}
             </div>
             
             {/* Right Column: Notifications & History (1/3 width on large screens) */}
