@@ -13,11 +13,11 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, TrendingUp } from "lucide-react";
+import { Loader2, TrendingUp } from "lucie-react";
 import { differenceInDays, parseISO } from "date-fns";
 import { useCustomFrequencies } from "@/hooks/use-custom-frequencies";
 import { getMaintenanceFrequencyDays } from "@/utils/frequency";
-import { parseMaintenanceMachineString } from "@/utils/parts"; // Use canonical parser
+import { parseMaintenanceMachineString } from "@/utils/parts";
 
 interface UsageData {
   part: string;
@@ -25,18 +25,17 @@ interface UsageData {
   recommended_days: number;
 }
 
-const PartUsageRateChart = () => {
+const PartUsageRateChart = ({ dataRefreshKey }: { dataRefreshKey: number }) => {
   const { frequencies, loading: loadingFrequencies } = useCustomFrequencies();
   const [chartData, setChartData] = useState<UsageData[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (loadingFrequencies) return;
 
     const fetchAndProcessData = async () => {
-      setLoadingHistory(true);
+      setLoading(true);
       
-      // Fetch all maintenance entries, ordered by date
       const { data, error } = await supabase
         .from("maintenance_entries")
         .select("machine, last_maintenance")
@@ -44,7 +43,7 @@ const PartUsageRateChart = () => {
 
       if (error) {
         console.error("Error fetching maintenance entries for usage chart:", error);
-        setLoadingHistory(false);
+        setLoading(false);
         return;
       }
 
@@ -52,13 +51,11 @@ const PartUsageRateChart = () => {
         const groupedEntries: Record<string, { dates: Date[], recommended: number }> = {};
 
         data.forEach((entry) => {
-          const { machineLabel, partTypeLabel, modelLabel: partModelLabel } = parseMaintenanceMachineString(entry.machine);
-          
-          if (!machineLabel || !partTypeLabel || !partModelLabel) return;
+          const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
+          if (!machineLabel || !partTypeLabel || !modelLabel) return;
 
-          const partKey = `${machineLabel}|${partTypeLabel}|${partModelLabel}`;
+          const partKey = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
           const maintenanceDate = parseISO(entry.last_maintenance.replace(/-/g, "/"));
-
           if (isNaN(maintenanceDate.getTime())) return;
 
           // Determine the recommended frequency: Custom > Default > 30 days (fallback)
@@ -95,16 +92,16 @@ const PartUsageRateChart = () => {
             });
           }
         });
-          
+        
         setChartData(processedData);
       }
-      setLoadingHistory(false);
+      setLoading(false);
     };
 
     fetchAndProcessData();
-  }, [loadingFrequencies, frequencies]);
+  }, [loadingFrequencies, frequencies, dataRefreshKey]);
 
-  const loading = loadingFrequencies || loadingHistory;
+  const loading = loadingFrequencies;
 
   if (chartData.length === 0 && !loading) {
     return (
@@ -131,62 +128,55 @@ const PartUsageRateChart = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="h-64 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                data={chartData} 
-                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" vertical={false} />
-                <XAxis 
-                  dataKey="part" 
-                  stroke="hsl(var(--foreground))" 
-                  fontSize={12} 
-                  tickFormatter={(value) => value.split('(')[0].trim()} // Clean up label
-                />
-                <YAxis 
-                  type="number" 
-                  stroke="hsl(var(--foreground))" 
-                  fontSize={12} 
-                  allowDecimals={false}
-                  label={{ value: 'Days', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))', 
-                    borderRadius: '0.5rem' 
-                  }}
-                  labelStyle={{ fontWeight: 'bold', color: 'hsl(var(--foreground))' }}
-                  formatter={(value, name) => {
-                    if (name === 'Actual') return [`${value} days`, 'Actual Replacement Interval'];
-                    if (name === 'Recommended') return [`${value} days`, 'Target Interval'];
-                    return value;
-                  }}
-                />
-                <Legend />
-                <Bar 
-                  dataKey="actual_days" 
-                  name="Actual"
-                  fill="hsl(var(--primary))" 
-                  radius={[4, 4, 0, 0]} 
-                />
-                <Bar 
-                  dataKey="recommended_days" 
-                  name="Target"
-                  fill="hsl(var(--secondary))" 
-                  opacity={0.8}
-                  radius={[4, 4, 0, 0]} 
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart 
+              data={chartData} 
+              margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" vertical={false} />
+              <XAxis 
+                dataKey="part" 
+                stroke="hsl(var(--foreground))" 
+                fontSize={12} 
+                tickFormatter={(value) => value.split('(')[0].trim()} // Clean up label
+              />
+              <YAxis 
+                type="number" 
+                stroke="hsl(var(--foreground))" 
+                fontSize={12} 
+                allowDecimals={false}
+                label={{ value: 'Days', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))', 
+                  borderRadius: '0.5rem' 
+                }}
+                labelStyle={{ fontWeight: 'bold', color: 'hsl(var(--foreground))' }}
+                formatter={(value, name) => {
+                  if (name === 'Actual') return [`${value} days`, 'Actual Replacement Interval'];
+                  if (name === 'Recommended') return [`${value}`, 'Target Interval'];
+                  return value;
+                }}
+              />
+              <Legend />
+              <Bar 
+                dataKey="actual_days" 
+                name="Actual"
+                fill="hsl(var(--primary))" 
+                radius={[4, 4, 0, 0]} 
+              />
+              <Bar 
+                dataKey="recommended_days" 
+                name="Recommended"
+                fill="hsl(var(--secondary))" 
+                radius={[4, 4, 0, 0]} 
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );
