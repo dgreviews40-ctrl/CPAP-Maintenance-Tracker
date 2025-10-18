@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, CheckCircle, Clock, Wrench, Package, Settings2, Settings as SettingsIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format, isPast, isToday, parseISO } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -93,8 +92,7 @@ const MaintenanceSchedule = () => {
   if (isLoading) {
     return (
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-        <Skeleton className="h-[300px] col-span-2" />
-        <Skeleton className="h-[300px]" />
+        <Skeleton className="h-[300px] col-span-3" />
       </div>
     );
   }
@@ -105,8 +103,8 @@ const MaintenanceSchedule = () => {
 
   return (
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-      {/* Upcoming & Overdue Tasks (Expanded to 2/3 width) */}
-      <Card className="lg:col-span-2 h-full">
+      {/* Upcoming & Overdue Tasks (Expanded to full 3 columns width) */}
+      <Card className="lg:col-span-3 h-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold flex items-center">
             <Wrench className="h-6 w-6 mr-2 text-primary" /> Upcoming & Overdue Tasks
@@ -141,32 +139,6 @@ const MaintenanceSchedule = () => {
               <p className="text-sm text-muted-foreground">No upcoming maintenance tasks scheduled.</p>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Placeholder for the space where LowInventoryWidget was (1/3 width) */}
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle className="text-lg">Quick Links</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Link to="/inventory">
-              <Button variant="outline" className="w-full justify-start">
-                <Package className="h-4 w-4 mr-2" /> Manage Inventory
-              </Button>
-            </Link>
-            <Link to="/machine-management">
-              <Button variant="outline" className="w-full justify-start">
-                <Settings2 className="h-4 w-4 mr-2" /> Configure Machines
-              </Button>
-            </Link>
-            <Link to="/settings">
-              <Button variant="outline" className="w-full justify-start">
-                <SettingsIcon className="h-4 w-4 mr-2" /> App Settings
-              </Button>
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>

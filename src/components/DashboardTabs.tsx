@@ -15,8 +15,8 @@ const DashboardTabs = () => {
       <TabsTrigger value="inventory" className="flex items-center">
         <Package className="h-4 w-4 mr-2 hidden sm:inline" /> Inventory
       </TabsTrigger>
-      <TabsTrigger value="machines" className="flex items-center">
-        <Settings2 className="h-4 w-4 mr-2 hidden sm:inline" /> Machines
+      <TabsTrigger value="settings" className="flex items-center">
+        <Settings2 className="h-4 w-4 mr-2 hidden sm:inline" /> Settings
       </TabsTrigger>
     </TabsList>
   );
