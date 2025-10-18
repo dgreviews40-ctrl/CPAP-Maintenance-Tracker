@@ -4,21 +4,21 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./use-auth";
 import { cpapMachines } from "@/data/cpap-machines";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, QueryObserverResult, RefetchOptions } from "@tanstack/react-query";
 
-interface PartModel {
+export interface PartModel {
   value: string;
   label: string;
   reorder_info: string;
 }
 
-interface PartType {
+export interface PartType {
   value: string;
   label: string;
   models: PartModel[];
 }
 
-interface Machine {
+export interface Machine {
   value: string;
   label: string;
   parts: PartType[];

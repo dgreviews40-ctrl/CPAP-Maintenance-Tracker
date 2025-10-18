@@ -11,9 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { showSuccess, showError } from "@/utils/toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAllMachines } from "@/hooks/use-all-machines";
+import { useAllMachines, Machine } from "@/hooks/use-all-machines"; // Import Machine type from the hook file
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Machine } from "../types"; // Import Machine type using relative path
 
 interface CustomFrequency {
   id: string;
@@ -40,7 +39,8 @@ const fetchCustomFrequencies = async (userId: string | undefined): Promise<Custo
 const NotificationSettings = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  // Explicitly type allMachines as Machine[]
+  
+  // Use the imported Machine type for the hook return value
   const { allMachines } = useAllMachines() as { allMachines: Machine[] };
   
   const { data: customFrequencies = [], isLoading: loading } = useQuery<CustomFrequency[]>({
@@ -124,10 +124,15 @@ const NotificationSettings = () => {
     return { machineLabel, partTypeLabel, partModelLabel };
   };
 
-  const availableParts = allMachines.map(m => ({
-    key: `${m.machine_label}::${m.part_type_label}::${m.part_model_label}`,
-    label: `${m.machine_label} - ${m.part_type_label} (${m.part_model_label})`,
-  }));
+  // Flatten the nested machine structure into a list of unique parts
+  const availableParts = allMachines.flatMap(machine => 
+    machine.parts.flatMap(partType => 
+      partType.models.map(model => ({
+        key: `${machine.label}::${partType.label}::${model.label}`,
+        label: `${machine.label} - ${partType.label} (${model.label})`,
+      }))
+    )
+  );
 
   const partsWithCustomFrequency = new Set(customFrequencies.map(f => f.unique_part_key));
   const partsForSelection = availableParts.filter(p => !partsWithCustomFrequency.has(p.key));
