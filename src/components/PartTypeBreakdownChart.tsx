@@ -84,12 +84,12 @@ const PartTypeBreakdownChart = () => {
       <CardContent>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <PieChart margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
               <Pie
                 data={chartData}
                 dataKey="value"
                 nameKey="name"
-                cx="30%" // Move center of pie chart to the left to make space for the legend
+                cx="50%" // Centered
                 cy="50%"
                 outerRadius={80}
                 fill="#8884d8"
@@ -113,10 +113,10 @@ const PartTypeBreakdownChart = () => {
                 formatter={(value, name, props) => [`${value} parts`, props.payload.name]}
               />
               <Legend 
-                layout="vertical" 
-                verticalAlign="middle" 
-                align="right" 
-                wrapperStyle={{ paddingLeft: '20px' }} // Add padding to separate from the chart
+                layout="horizontal" 
+                verticalAlign="top" 
+                align="center" 
+                wrapperStyle={{ paddingTop: '0px' }} // Remove previous padding
               />
             </PieChart>
           </ResponsiveContainer>
