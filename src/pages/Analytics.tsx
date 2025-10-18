@@ -5,7 +5,8 @@ import DataManagement from "@/components/DataManagement";
 import PartUsageRateChart from "@/components/PartUsageRateChart";
 import PartReplacementHistory from "@/components/PartReplacementHistory";
 import InventoryStatusChart from "@/components/InventoryStatusChart";
-import MaintenanceDataExporter from "@/components/MaintenanceDataExporter"; // Import the new component
+import MaintenanceDataExporter from "@/components/MaintenanceDataExporter";
+import InventoryDataExporter from "@/components/InventoryDataExporter"; // Import the new component
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,10 @@ const Analytics = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">Data Export</h2>
               <Separator className="mb-4" />
-              <MaintenanceDataExporter />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MaintenanceDataExporter />
+                <InventoryDataExporter />
+              </div>
             </section>
             
             <section>
