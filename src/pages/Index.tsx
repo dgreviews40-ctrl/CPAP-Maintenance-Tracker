@@ -3,14 +3,24 @@
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import DashboardTabs from "@/components/DashboardTabs";
-import MaintenanceSchedule from "@/components/MaintenanceSchedule"; // Use MaintenanceSchedule for Overview
-import MaintenanceLog from "@/components/MaintenanceLog"; // Use MaintenanceLog for Maintenance tab
-import Inventory from "@/components/Inventory"; // Use Inventory for Inventory tab
+import MaintenanceLog from "@/components/MaintenanceLog";
+import Inventory from "@/components/Inventory";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Settings as SettingsIcon } from "lucide-react";
+
+// Dashboard Components
+import DashboardSummary from "@/components/DashboardSummary";
+import InventoryAlert from "@/components/InventoryAlert";
+import UpcomingTasks from "@/components/UpcomingTasks";
+import MaintenanceForecastChart from "@/components/MaintenanceForecastChart";
+import PartUsageRateChart from "@/components/PartUsageRateChart";
+import MaintenanceActivityChart from "@/components/MaintenanceActivityChart";
+import PartTypeBreakdownChart from "@/components/PartTypeBreakdownChart";
+import MachineHealthScore from "@/components/MachineHealthScore";
+
 
 const Index = () => {
   const [searchParams] = useSearchParams();
@@ -44,9 +54,26 @@ const Index = () => {
           <DashboardTabs /> 
 
           <div className="mt-6">
-            {/* Overview Tab: Contains the schedule and low inventory widget */}
-            <TabsContent value="overview">
-              <MaintenanceSchedule />
+            {/* Overview Tab: Restored full dashboard view */}
+            <TabsContent value="overview" className="space-y-6">
+              <InventoryAlert />
+              <DashboardSummary />
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Expanding Upcoming Tasks section by giving it 1/3 space next to the forecast chart */}
+                <div className="lg:col-span-2">
+                  <MaintenanceForecastChart />
+                </div>
+                <UpcomingTasks />
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <MachineHealthScore />
+                <PartTypeBreakdownChart />
+                <MaintenanceActivityChart />
+              </div>
+              
+              <PartUsageRateChart />
             </TabsContent>
             
             {/* Maintenance Tab: Contains the form and the list/tracker */}
