@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./use-auth";
-import { cpapMachines } from "@/data/cpap-machines";
+import { useAllMachines } from "./use-all-machines"; // Import the correct hook
 
 interface UniquePartKey {
   machineLabel: string;
@@ -17,36 +17,32 @@ export interface PartData {
   modelLabel: string;
   reorderInfo: string;
   uniqueKey: string;
-  // Inventory fields (optional, as a part might only exist in maintenance history)
   quantity?: number;
   reorderThreshold?: number;
 }
 
-// Helper to parse the machine string from maintenance_entries
 const parseMaintenanceMachineString = (machineString: string): UniquePartKey => {
-  // Expected format: "Machine Label - Part Type Label - Part Model Label (SKU: XXX)"
   const parts = machineString.split(' - ');
-  
   const machine = parts[0]?.trim() || machineString;
   const partType = parts[1]?.trim() || "";
-  
-  // Remove SKU info from part model
   const partModelWithSku = parts[2]?.trim() || "";
   const partModel = partModelWithSku.replace(/\s*\(SKU:.*\)/, '').trim();
-
   return { machineLabel: machine, partTypeLabel: partType, modelLabel: partModel };
 };
 
-
 export function useUserParts() {
   const { user, loading: authLoading } = useAuth();
+  const { allMachines, loading: machinesLoading } = useAllMachines(); // Use the hook for all machines
   const [userParts, setUserParts] = useState<PartData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchUserParts = useCallback(async () => {
-    if (!user) {
-      setUserParts([]);
-      setLoading(false);
+    if (!user || machinesLoading) {
+      // Wait for user and the full machine list to be ready
+      if (!user) {
+        setUserParts([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -56,7 +52,7 @@ export function useUserParts() {
     const partsMap = new Map<string, PartData>();
     const inventoryMap = new Map<string, { quantity: number, reorder_threshold: number }>();
 
-    // 1. Fetch unique parts from Maintenance Entries
+    // 1. Fetch from Maintenance Entries
     const { data: maintenanceData, error: maintenanceError } = await supabase
       .from("maintenance_entries")
       .select("machine");
@@ -67,16 +63,15 @@ export function useUserParts() {
       maintenanceData.forEach(entry => {
         const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
         if (machineLabel && partTypeLabel && modelLabel) {
-          const key = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
-          uniqueKeys.add(key);
+          uniqueKeys.add(`${machineLabel}|${partTypeLabel}|${modelLabel}`);
         }
       });
     }
 
-    // 2. Fetch unique parts AND inventory data from Part Inventory
+    // 2. Fetch from Part Inventory
     const { data: inventoryData, error: inventoryError } = await supabase
       .from("part_inventory")
-      .select("machine_label, part_type_label, part_model_label, reorder_info, quantity, reorder_threshold");
+      .select("machine_label, part_type_label, part_model_label, quantity, reorder_threshold");
 
     if (inventoryError) {
       console.error("Error fetching inventory parts:", inventoryError);
@@ -88,19 +83,16 @@ export function useUserParts() {
       });
     }
 
-    // 3. Map unique keys back to full data structure using cpapMachines data
+    // 3. Map unique keys using the comprehensive `allMachines` list
     uniqueKeys.forEach(key => {
       const [machineLabel, partTypeLabel, modelLabel] = key.split('|');
       
-      const machineData = cpapMachines.find(m => m.label === machineLabel);
+      const machineData = allMachines.find(m => m.label === machineLabel);
       const partTypeData = machineData?.parts.find(p => p.label === partTypeLabel);
       const modelData = partTypeData?.models.find(m => m.label === modelLabel);
       
       const inventoryStatus = inventoryMap.get(key);
 
-      // IMPORTANT: Only include the part if we can successfully map it back to the hardcoded data
-      // OR if it's a custom part (which should be handled by useAllMachines, but useUserParts needs to be robust)
-      // Since we are only using hardcoded parts for now, we rely on modelData being found.
       if (modelData) {
         partsMap.set(key, {
           machineLabel,
@@ -118,7 +110,7 @@ export function useUserParts() {
 
     setUserParts(Array.from(partsMap.values()));
     setLoading(false);
-  }, [user]);
+  }, [user, allMachines, machinesLoading]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -126,5 +118,6 @@ export function useUserParts() {
     }
   }, [authLoading, fetchUserParts]);
 
-  return { userParts, loading };
+  // The overall loading state depends on auth, machines, and this hook's own fetching
+  return { userParts, loading: authLoading || machinesLoading || loading };
 }
