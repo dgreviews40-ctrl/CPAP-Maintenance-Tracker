@@ -1,49 +1,63 @@
 "use client";
 
-import Layout from "@/components/Layout";
-import MaintenanceSchedule from "@/components/MaintenanceSchedule";
+import React, { useEffect } from 'react';
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import DashboardTabs from "@/components/DashboardTabs";
+import Overview from "@/components/Overview";
 import MaintenanceLog from "@/components/MaintenanceLog";
 import Inventory from "@/components/Inventory";
-import DashboardTabs from "@/components/DashboardTabs";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { useState } from "react";
-import MachineConfiguration from "@/components/MachineConfiguration"; // Import the new component
+import Settings from "@/components/Settings";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("schedule");
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const activeTab = searchParams.get('tab') || 'overview';
+
+  // Function to handle tab change by updating URL
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', value);
+    navigate(`${location.pathname}?${params.toString()}`);
+  };
+
+  // Ensure default tab is set in URL on initial load
+  useEffect(() => {
+    if (!searchParams.get('tab')) {
+      // Use replace to avoid polluting history with the default tab
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('tab', 'overview');
+      navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+    }
+  }, [searchParams, navigate, location.pathname]);
 
   return (
-    <Layout>
-      <div className="container mx-auto p-4">
-        <div className="w-full max-w-6xl mx-auto">
-          <header className="text-center mb-8">
-            <h1 className="text-4xl font-bold">CPAP Maintenance Tracker</h1>
-            <p className="text-xl text-muted-foreground">
-              Keep track of your machine maintenance and part inventory.
-            </p>
-          </header>
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <DashboardTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      
+      {/* Tabs component manages the context, using URL state */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        {/* DashboardTabs now only renders the TabsList and Triggers */}
+        <DashboardTabs /> 
 
-            <div className="mt-6">
-              <TabsContent value="schedule">
-                <MaintenanceSchedule />
-              </TabsContent>
-              <TabsContent value="maintenance">
-                <MaintenanceLog />
-              </TabsContent>
-              <TabsContent value="inventory">
-                <Inventory />
-              </TabsContent>
-              <TabsContent value="machines">
-                <MachineConfiguration />
-              </TabsContent>
-            </div>
-          </Tabs>
+        <div className="mt-6">
+          <TabsContent value="overview">
+            <Overview />
+          </TabsContent>
+          <TabsContent value="maintenance">
+            <MaintenanceLog />
+          </TabsContent>
+          <TabsContent value="inventory">
+            <Inventory />
+          </TabsContent>
+          <TabsContent value="settings">
+            <Settings />
+          </TabsContent>
         </div>
-      </div>
-    </Layout>
+      </Tabs>
+    </div>
   );
 };
 

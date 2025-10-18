@@ -1,27 +1,24 @@
 "use client";
 
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Wrench, Bell, Package, Settings } from "lucide-react";
+import { Wrench, Package, Settings, Home } from "lucide-react";
 
-interface DashboardTabsProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-}
+// This component no longer manages state or navigation, it just renders the list of triggers.
 
-const DashboardTabs: React.FC<DashboardTabsProps> = ({ activeTab, setActiveTab }) => {
+const DashboardTabs = () => {
   return (
-    <TabsList className="grid w-full grid-cols-4">
-      <TabsTrigger value="schedule" className="flex items-center">
-        <Calendar className="h-4 w-4 mr-2 hidden sm:inline" /> Schedule
+    <TabsList className="grid w-full grid-cols-4 h-auto">
+      <TabsTrigger value="overview" className="flex items-center">
+        <Home className="h-4 w-4 mr-2 hidden sm:inline" /> Overview
       </TabsTrigger>
       <TabsTrigger value="maintenance" className="flex items-center">
-        <Wrench className="h-4 w-4 mr-2 hidden sm:inline" /> Maintenance Log
+        <Wrench className="h-4 w-4 mr-2 hidden sm:inline" /> Maintenance
       </TabsTrigger>
       <TabsTrigger value="inventory" className="flex items-center">
         <Package className="h-4 w-4 mr-2 hidden sm:inline" /> Inventory
       </TabsTrigger>
-      <TabsTrigger value="machines" className="flex items-center">
-        <Settings className="h-4 w-4 mr-2 hidden sm:inline" /> Machines
+      <TabsTrigger value="settings" className="flex items-center">
+        <Settings className="h-4 w-4 mr-2 hidden sm:inline" /> Settings
       </TabsTrigger>
     </TabsList>
   );
