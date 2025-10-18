@@ -15,6 +15,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, TrendingUp } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
+import { useCustomFrequencies } from "@/hooks/use-custom-frequencies";
+import { getMaintenanceFrequencyDays } from "@/utils/frequency";
+import { parseMachineStringForInventory } from "@/utils/inventory"; // Reusing the parser
 
 interface UsageData {
   part: string;
@@ -22,23 +25,16 @@ interface UsageData {
   recommended_days: number;
 }
 
-// Simplified mapping based on part name in the 'machine' string
-const getRecommendedFrequency = (machineLabel: string): number | null => {
-  const lowerLabel = machineLabel.toLowerCase();
-  if (lowerLabel.includes("filter")) return 30;
-  if (lowerLabel.includes("mask")) return 90;
-  if (lowerLabel.includes("tubing") || lowerLabel.includes("hose")) return 90;
-  if (lowerLabel.includes("water chamber")) return 180;
-  return null; // Unknown part type
-};
-
 const PartUsageRateChart = () => {
+  const { frequencies, loading: loadingFrequencies } = useCustomFrequencies();
   const [chartData, setChartData] = useState<UsageData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
   useEffect(() => {
+    if (loadingFrequencies) return;
+
     const fetchAndProcessData = async () => {
-      setLoading(true);
+      setLoadingHistory(true);
       
       // Fetch all maintenance entries, ordered by date
       const { data, error } = await supabase
@@ -48,7 +44,7 @@ const PartUsageRateChart = () => {
 
       if (error) {
         console.error("Error fetching maintenance entries for usage chart:", error);
-        setLoading(false);
+        setLoadingHistory(false);
         return;
       }
 
@@ -56,22 +52,28 @@ const PartUsageRateChart = () => {
         const groupedEntries: Record<string, { dates: Date[], recommended: number }> = {};
 
         data.forEach((entry) => {
-          const recommended = getRecommendedFrequency(entry.machine);
-          if (recommended === null) return; // Skip parts we can't categorize
+          const { machineLabel, partTypeLabel, partModelLabel } = parseMachineStringForInventory(entry.machine);
+          
+          if (!machineLabel || !partTypeLabel || !partModelLabel) return;
 
-          // Use part model label as key (assuming format "Machine - Part Model Label")
-          const partKey = entry.machine.split(' - ')[1] || entry.machine; 
+          const partKey = `${machineLabel}|${partTypeLabel}|${partModelLabel}`;
           const maintenanceDate = parseISO(entry.last_maintenance.replace(/-/g, "/"));
 
+          if (isNaN(maintenanceDate.getTime())) return;
+
+          // Determine the recommended frequency: Custom > Default > 30 days (fallback)
+          const defaultDays = getMaintenanceFrequencyDays(partTypeLabel) || 30;
+          const recommendedDays = frequencies[partKey] || defaultDays;
+
           if (!groupedEntries[partKey]) {
-            groupedEntries[partKey] = { dates: [], recommended };
+            groupedEntries[partKey] = { dates: [], recommended: recommendedDays };
           }
           groupedEntries[partKey].dates.push(maintenanceDate);
         });
 
         const processedData: UsageData[] = [];
 
-        Object.entries(groupedEntries).forEach(([part, { dates, recommended }]) => {
+        Object.entries(groupedEntries).forEach(([key, { dates, recommended }]) => {
           // Ensure dates are sorted
           dates.sort((a, b) => a.getTime() - b.getTime());
 
@@ -84,8 +86,10 @@ const PartUsageRateChart = () => {
             
             const averageInterval = Math.round(totalIntervalDays / (dates.length - 1));
             
+            const [machineLabel, partTypeLabel, partModelLabel] = key.split('|');
+            
             processedData.push({
-              part: part.length > 20 ? part.substring(0, 20) + '...' : part,
+              part: `${partModelLabel} (${machineLabel})`,
               actual_days: averageInterval,
               recommended_days: recommended,
             });
@@ -94,11 +98,13 @@ const PartUsageRateChart = () => {
           
         setChartData(processedData);
       }
-      setLoading(false);
+      setLoadingHistory(false);
     };
 
     fetchAndProcessData();
-  }, []);
+  }, [loadingFrequencies, frequencies]);
+
+  const loading = loadingFrequencies || loadingHistory;
 
   if (chartData.length === 0 && !loading) {
     return (
@@ -159,7 +165,7 @@ const PartUsageRateChart = () => {
                   labelStyle={{ fontWeight: 'bold', color: 'hsl(var(--foreground))' }}
                   formatter={(value, name) => {
                     if (name === 'Actual') return [`${value} days`, 'Actual Replacement Interval'];
-                    if (name === 'Recommended') return [`${value} days`, 'Recommended Interval'];
+                    if (name === 'Recommended') return [`${value} days`, 'Target Interval'];
                     return value;
                   }}
                 />
@@ -172,7 +178,7 @@ const PartUsageRateChart = () => {
                 />
                 <Bar 
                   dataKey="recommended_days" 
-                  name="Recommended"
+                  name="Target"
                   fill="hsl(var(--secondary))" 
                   opacity={0.8}
                   radius={[4, 4, 0, 0]} 
