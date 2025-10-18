@@ -7,6 +7,7 @@ import { MaintenanceEntry } from "./MaintenanceTracker";
 import { addDays, format } from "date-fns";
 import { getMaintenanceFrequencyDays, getCustomFrequencyFromDB } from "@/utils/frequency";
 import { showError } from "@/utils/toast";
+import { decrementInventory, parseMachineStringForInventory } from "@/utils/inventory"; // Import utilities
 
 interface MarkAsDoneButtonProps {
   entry: MaintenanceEntry;
@@ -25,18 +26,22 @@ const MarkAsDoneButton = ({ entry, onComplete }: MarkAsDoneButtonProps) => {
   const handleComplete = async () => {
     setIsProcessing(true);
     
-    const partType = extractPartTypeLabel(entry.machine);
+    const { machineLabel, partTypeLabel, partModelLabel } = parseMachineStringForInventory(entry.machine);
+    
+    if (!partTypeLabel || !machineLabel || !partModelLabel) {
+      showError("Could not parse part details from entry. Please edit manually.");
+      setIsProcessing(false);
+      return;
+    }
+    
     const today = format(new Date(), 'yyyy-MM-dd');
     
-    // 1. Determine the frequency
-    const defaultFrequency = getMaintenanceFrequencyDays(partType);
+    // 1. Determine the frequency (Check DB first, then fallback to default)
+    // Note: We fetch the custom frequency directly here for the most accurate calculation.
+    const customFrequency = await getCustomFrequencyFromDB(machineLabel, partTypeLabel, partModelLabel);
+    const defaultFrequency = getMaintenanceFrequencyDays(partTypeLabel);
     
-    // Since we don't have the full machine/model breakdown here, we rely on the default
-    // or assume the user manages custom frequencies via the Frequency Management tab.
-    // For simplicity in this button, we use the default if custom is not easily accessible.
-    // NOTE: A more robust solution would require fetching the custom frequency here, 
-    // but for a quick action button, we prioritize speed and use the default as a fallback.
-    const frequencyDays = defaultFrequency || 30; // Default to 30 days if unknown
+    const frequencyDays = customFrequency || defaultFrequency || 30; // Default to 30 days if unknown
 
     if (frequencyDays <= 0) {
       showError("Cannot calculate next maintenance date. Please edit the entry manually.");
@@ -47,12 +52,12 @@ const MarkAsDoneButton = ({ entry, onComplete }: MarkAsDoneButtonProps) => {
     // 2. Calculate new next maintenance date
     const newNextDate = format(addDays(new Date(), frequencyDays), 'yyyy-MM-dd');
 
-    // 3. Update the entry
+    // 3. Update the maintenance entry
     const success = await onComplete(entry.id, today, newNextDate);
 
     if (success) {
-      // Optionally decrement inventory if this was a replacement, but for a generic 'done' button, 
-      // we assume it might be cleaning, so we skip inventory decrement here.
+      // 4. Decrement inventory for the replaced part
+      await decrementInventory(machineLabel, partTypeLabel, partModelLabel);
     }
     
     setIsProcessing(false);

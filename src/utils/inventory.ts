@@ -2,6 +2,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "./toast";
 
 /**
+ * Helper to parse the machine string back into its components.
+ * Expected format: "Machine Label - Part Type Label - Part Model Label (SKU: XXX)"
+ */
+export const parseMachineStringForInventory = (machineString: string) => {
+  const parts = machineString.split(' - ');
+  
+  const machineLabel = parts[0]?.trim() || "";
+  const partTypeLabel = parts[1]?.trim() || "";
+  
+  // Remove SKU info from part model
+  const partModelWithSku = parts[2]?.trim() || "";
+  const partModelLabel = partModelWithSku.replace(/\s*\(SKU:.*\)/, '').trim();
+
+  return { machineLabel, partTypeLabel, partModelLabel };
+};
+
+
+/**
  * Decrements the quantity of a specific part in the user's inventory by 1.
  * 
  * @param machineLabel The label of the machine (e.g., "ResMed AirSense 11").
