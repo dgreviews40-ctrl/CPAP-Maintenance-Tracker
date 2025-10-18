@@ -16,13 +16,14 @@ import InventoryStatusChart from "./InventoryStatusChart";
 import PartReplacementHistory from "./PartReplacementHistory";
 import MaintenanceTimeline from "./MaintenanceTimeline"; 
 import PartUsageRateChart from "./PartUsageRateChart";
-import GettingStarted from "./GettingStarted"; // Import the new component
+import GettingStarted from "./GettingStarted";
 import { supabase } from "@/integrations/supabase/client";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Warehouse, History } from "lucide-react";
 import EditMaintenanceDialog from "./EditMaintenanceDialog"; 
+import { useSeedData } from "@/hooks/use-seed-data"; // Import the new hook
 
 export type MaintenanceEntry = {
   id: string;
@@ -66,7 +67,7 @@ const MaintenanceTracker = () => {
   
   // State for Controls
   const [filter, setFilter] = useState<MaintenanceFilter>("all");
-  const [machineFilter, setMachineFilter] = useState<string>(""); // New state for machine filter
+  const [machineFilter, setMachineFilter] = useState<string>("");
   const [sortKey, setSortKey] = useState<MaintenanceSortKey>("next_maintenance");
   const [sortOrder, setSortOrder] = useState<MaintenanceSortOrder>("asc");
 
@@ -85,7 +86,6 @@ const MaintenanceTracker = () => {
     let dueSoonCount = 0;
 
     data.forEach((entry) => {
-      // Handle timezone issues by replacing hyphens with slashes
       const nextMaintenanceDate = startOfDay(
         new Date(entry.next_maintenance.replace(/-/g, "/")),
       );
@@ -112,11 +112,10 @@ const MaintenanceTracker = () => {
     }
   }, [notificationPermission]);
 
-  const fetchEntries = async () => {
-    if (!user) return; // Only fetch if authenticated
+  const fetchEntries = useCallback(async () => {
+    if (!user) return;
 
     setLoading(true);
-    // RLS ensures we only get the user's data
     const { data, error } = await supabase
       .from("maintenance_entries")
       .select("*")
@@ -132,17 +131,19 @@ const MaintenanceTracker = () => {
       checkAndNotify(fetchedEntries as MaintenanceEntry[]);
     }
     setLoading(false);
-  };
+  }, [user]);
+
+  // Use the new seed data hook, passing fetchEntries as the callback
+  useSeedData(fetchEntries);
 
   useEffect(() => {
     if (user) {
       fetchEntries();
     } else if (!authLoading) {
-      // Clear entries if user logs out
       setEntries([]);
       setLoading(false);
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, fetchEntries]);
 
   const addEntry = async (entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => {
     if (!user) {
@@ -150,7 +151,6 @@ const MaintenanceTracker = () => {
       return false;
     }
     
-    // Explicitly include user_id for clarity, although RLS insert policy handles it
     const entryWithUserId = { ...entry, user_id: user.id };
 
     const { error } = await supabase
@@ -164,7 +164,7 @@ const MaintenanceTracker = () => {
     }
     
     showSuccess("Maintenance entry added successfully!");
-    fetchEntries(); // Re-fetch to update list, dashboard summary, and chart
+    fetchEntries();
     return true;
   };
 
@@ -186,7 +186,7 @@ const MaintenanceTracker = () => {
     }
 
     showSuccess("Maintenance entry updated successfully!");
-    fetchEntries(); // Re-fetch to update list, dashboard summary, and chart
+    fetchEntries();
     return true;
   };
   
@@ -201,7 +201,6 @@ const MaintenanceTracker = () => {
       .update({
         last_maintenance: newLastDate,
         next_maintenance: newNextDate,
-        // Optionally update notes to reflect completion, but keeping existing notes for now
       })
       .eq("id", id);
 
@@ -222,7 +221,6 @@ const MaintenanceTracker = () => {
       return;
     }
     
-    // RLS ensures only the owner can delete
     const { error } = await supabase
       .from("maintenance_entries")
       .delete()
@@ -233,9 +231,7 @@ const MaintenanceTracker = () => {
       showError("Failed to delete maintenance entry.");
     } else {
       showSuccess("Entry deleted.");
-      setEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
-      // Note: DashboardSummary and InventoryStatusChart will automatically re-fetch data 
-      // or rely on the next full fetchEntries call if needed.
+      fetchEntries();
     }
   };
 
@@ -244,22 +240,17 @@ const MaintenanceTracker = () => {
     setIsEditDialogOpen(true);
   };
 
-  // Memoized filtered and sorted list
   const filteredAndSortedEntries = useMemo(() => {
     let result = entries;
 
-    // 1. Filtering by Status
     if (filter !== "all") {
       result = result.filter(entry => getEntryStatus(entry.next_maintenance) === filter);
     }
     
-    // 2. Filtering by Machine Name
     if (machineFilter) {
-      // We check if the machine string starts with the machine label, as the string contains part info too.
       result = result.filter(entry => entry.machine.startsWith(machineFilter));
     }
 
-    // 3. Sorting
     result.sort((a, b) => {
       if (sortKey === "next_maintenance") {
         const dateA = new Date(a.next_maintenance.replace(/-/g, "/"));
@@ -298,18 +289,12 @@ const MaintenanceTracker = () => {
         <CardContent className="space-y-8">
           <NotificationPermission onPermissionChange={setNotificationPermission} />
           
-          {/* Row 1: Summary Cards - key forces refetch on entry change */}
           <DashboardSummary key={`summary-${entries.length}`} />
           
-          {/* Show getting started guide for new users */}
           {!loading && entries.length === 0 && <GettingStarted />}
 
-          {/* Keyed div forces all charts to re-render and refetch data when entries change */}
           <div key={`charts-${entries.length}`}>
-            {/* Row 2: Charts (2 columns) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* Inventory Status Chart */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -321,7 +306,6 @@ const MaintenanceTracker = () => {
                 </CardContent>
               </Card>
 
-              {/* Part Replacement History */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -334,18 +318,15 @@ const MaintenanceTracker = () => {
               </Card>
             </div>
             
-            {/* Row 3: Timeline and Usage Rate (Full Width) */}
             <MaintenanceTimeline /> 
             <PartUsageRateChart />
           </div>
 
-          {/* Row 4: Add Entry Form */}
           <div className="pt-4">
             <h3 className="text-xl font-semibold mb-4">Add New Maintenance Entry</h3>
             <MaintenanceForm onAddEntry={addEntry} />
           </div>
           
-          {/* Row 5: Schedule List */}
           <div className="pt-4">
             <h3 className="text-xl font-semibold mb-4">Maintenance Schedule</h3>
             <MaintenanceControls 
