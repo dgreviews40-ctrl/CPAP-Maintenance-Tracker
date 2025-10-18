@@ -9,12 +9,13 @@ import { Toaster } from "@/components/ui/toaster";
 import Settings from "./pages/Settings";
 import Inventory from "./pages/Inventory";
 import MachineManagement from "./pages/MachineManagement";
-import { DataRefreshProvider } from "./contexts/DataRefreshContext"; // Import Provider
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/query-client"; // Import queryClient
 
 function App() {
   return (
     <AuthProvider>
-      <DataRefreshProvider>
+      <QueryClientProvider client={queryClient}>
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -28,7 +29,7 @@ function App() {
           </Routes>
         </Router>
         <Toaster />
-      </DataRefreshProvider>
+      </QueryClientProvider>
     </AuthProvider>
   );
 }

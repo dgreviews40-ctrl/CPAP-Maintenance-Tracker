@@ -17,6 +17,8 @@ import { ModelCombobox } from "./ModelCombobox";
 import { cpapMachines } from "@/data/cpap-machines";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAllMachines } from "@/hooks/use-all-machines";
 
 interface InventoryItem {
   id: string;
@@ -35,88 +37,61 @@ interface Part {
   models: { value: string; label: string; reorder_info: string }[];
 }
 
+const fetchInventory = async (userId: string | undefined): Promise<InventoryItem[]> => {
+  if (!userId) return [];
+  
+  const { data, error } = await supabase
+    .from("part_inventory")
+    .select("*")
+    .order("machine_label", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching inventory:", error);
+    throw new Error("Failed to load inventory.");
+  }
+  return data as InventoryItem[];
+};
+
 const PartInventory = () => {
   const { user } = useAuth();
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAdding, setIsAdding] = useState(false);
+  const queryClient = useQueryClient();
+  const { allMachines } = useAllMachines(); // Use allMachines for combobox options
+
+  const { data: inventory = [], isLoading: loading, refetch: refetchInventory } = useQuery<InventoryItem[]>({
+    queryKey: ['partInventory', user?.id],
+    queryFn: () => fetchInventory(user?.id),
+    enabled: !!user,
+    staleTime: 1000 * 10, // 10 seconds
+  });
   
   // Form state for adding new item
+  const [isAdding, setIsAdding] = useState(false);
   const [machine, setMachine] = useState("");
   const [partType, setPartType] = useState("");
   const [partModel, setPartModel] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [reorderThreshold, setReorderThreshold] = useState(0);
 
-  const fetchInventory = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    
-    const { data, error } = await supabase
-      .from("part_inventory")
-      .select("*")
-      .order("machine_label", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching inventory:", error);
-      showError("Failed to load inventory.");
-    } else {
-      const fetchedInventory = data as InventoryItem[];
-      setInventory(fetchedInventory);
-    }
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    fetchInventory();
-  }, [fetchInventory]);
-
   // Derived state for comboboxes
-  const machineData = cpapMachines.find(m => m.label === machine);
+  const machineData = allMachines.find(m => m.label === machine);
   const availableParts: Part[] = machineData?.parts || [];
   const selectedPart = availableParts.find(p => p.label === partType);
   const availableModels = selectedPart?.models || [];
   const selectedModel = availableModels.find(m => m.label === partModel);
 
-  const handleAddPart = async () => {
-    if (!user || !machine || !partType || !partModel || quantity <= 0) {
-      showError("Please select a machine, part type, part model, and a valid quantity.");
-      return;
-    }
+  const invalidateInventoryQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['partInventory'] });
+    queryClient.invalidateQueries({ queryKey: ['userParts'] }); // User parts depend on inventory
+  }, [queryClient]);
 
-    const reorderInfo = selectedModel?.reorder_info || null;
-
-    // Check if this exact part already exists in inventory
-    const existingItem = inventory.find(item => 
-      item.machine_label === machine && 
-      item.part_type_label === partType && 
-      item.part_model_label === partModel
-    );
-
-    if (existingItem) {
-      showError("This exact part is already in your inventory. Please update the quantity instead.");
-      return;
-    }
-
-    const newItem = {
-      user_id: user.id,
-      machine_label: machine,
-      part_type_label: partType,
-      part_model_label: partModel,
-      reorder_info: reorderInfo,
-      quantity: quantity,
-      reorder_threshold: reorderThreshold,
-      last_restock: format(new Date(), 'yyyy-MM-dd'),
-    };
-
-    const { error } = await supabase
-      .from("part_inventory")
-      .insert([newItem]);
-
-    if (error) {
-      console.error("Error adding part:", error);
-      showError("Failed to add part to inventory.");
-    } else {
+  const addMutation = useMutation({
+    mutationFn: async (newItem: Omit<InventoryItem, 'id' | 'last_restock'>) => {
+      const { error } = await supabase
+        .from("part_inventory")
+        .insert([{ ...newItem, user_id: user!.id, last_restock: format(new Date(), 'yyyy-MM-dd') }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
       showSuccess("Part added to inventory!");
       // Reset form
       setMachine("");
@@ -125,67 +100,96 @@ const PartInventory = () => {
       setQuantity(1);
       setReorderThreshold(0);
       setIsAdding(false);
-      fetchInventory();
+      invalidateInventoryQueries();
+    },
+    onError: (error) => {
+      console.error("Error adding part:", error);
+      if ((error as any).code === '23505') { // Unique constraint violation
+        showError("This exact part is already in your inventory. Please update the quantity instead.");
+      } else {
+        showError("Failed to add part to inventory.");
+      }
     }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, updateData }: { id: string, updateData: Partial<InventoryItem> }) => {
+      const { error } = await supabase
+        .from("part_inventory")
+        .update(updateData)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Inventory updated!");
+      invalidateInventoryQueries();
+    },
+    onError: (error) => {
+      console.error("Error updating inventory:", error);
+      showError("Failed to update inventory.");
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("part_inventory")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Inventory item deleted.");
+      invalidateInventoryQueries();
+    },
+    onError: (error) => {
+      console.error("Error deleting part:", error);
+      showError("Failed to delete inventory item.");
+    }
+  });
+
+  const handleAddPart = () => {
+    if (!user || !machine || !partType || !partModel || quantity <= 0) {
+      showError("Please select a machine, part type, part model, and a valid quantity.");
+      return;
+    }
+
+    const reorderInfo = selectedModel?.reorder_info || null;
+    
+    addMutation.mutate({
+      machine_label: machine,
+      part_type_label: partType,
+      part_model_label: partModel,
+      reorder_info: reorderInfo,
+      quantity: quantity,
+      reorder_threshold: reorderThreshold,
+    } as Omit<InventoryItem, 'id' | 'last_restock'>);
   };
 
-  const handleUpdateQuantity = async (id: string, newQuantity: number) => {
+  const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 0) return;
+
+    const currentItem = inventory.find(item => item.id === id);
+    if (!currentItem) return;
 
     const updateData: Partial<InventoryItem> = { quantity: newQuantity };
     
     // If quantity increases, update last_restock date
-    const currentItem = inventory.find(item => item.id === id);
-    if (currentItem && newQuantity > currentItem.quantity) {
+    if (newQuantity > currentItem.quantity) {
         updateData.last_restock = format(new Date(), 'yyyy-MM-dd');
     }
 
-    const { error } = await supabase
-      .from("part_inventory")
-      .update(updateData)
-      .eq("id", id);
-
-    if (error) {
-      console.error("Error updating quantity:", error);
-      showError("Failed to update quantity.");
-    } else {
-      showSuccess("Inventory updated!");
-      fetchInventory();
-    }
+    updateMutation.mutate({ id, updateData });
   };
   
-  const handleUpdateThreshold = async (id: string, newThreshold: number) => {
+  const handleUpdateThreshold = (id: string, newThreshold: number) => {
     if (newThreshold < 0) return;
-
-    const { error } = await supabase
-      .from("part_inventory")
-      .update({ reorder_threshold: newThreshold })
-      .eq("id", id);
-
-    if (error) {
-      console.error("Error updating threshold:", error);
-      showError("Failed to update reorder threshold.");
-    } else {
-      showSuccess("Reorder threshold updated!");
-      fetchInventory();
-    }
+    updateMutation.mutate({ id, updateData: { reorder_threshold: newThreshold } });
   };
 
-  const handleDeletePart = async (id: string) => {
+  const handleDeletePart = (id: string) => {
     if (!window.confirm("Are you sure you want to delete this inventory item?")) return;
-
-    const { error } = await supabase
-      .from("part_inventory")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error("Error deleting part:", error);
-      showError("Failed to delete inventory item.");
-    } else {
-      showSuccess("Inventory item deleted.");
-      setInventory(prev => prev.filter(item => item.id !== id));
-    }
+    deleteMutation.mutate(id);
   };
 
   return (
@@ -261,8 +265,11 @@ const PartInventory = () => {
                 />
               </div>
             </div>
-            <Button onClick={handleAddPart} disabled={!machine || !partType || !partModel || quantity <= 0}>
-              Save Part
+            <Button 
+              onClick={handleAddPart} 
+              disabled={!machine || !partType || !partModel || quantity <= 0 || addMutation.isPending}
+            >
+              {addMutation.isPending ? "Saving..." : "Save Part"}
             </Button>
           </div>
         )}
@@ -329,6 +336,7 @@ const PartInventory = () => {
                           size="icon"
                           onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                           title="Increase Quantity (Restock)"
+                          disabled={updateMutation.isPending}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -336,7 +344,7 @@ const PartInventory = () => {
                           variant="outline"
                           size="icon"
                           onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= 0}
+                          disabled={item.quantity <= 0 || updateMutation.isPending}
                           title="Decrease Quantity"
                         >
                           <Minus className="h-4 w-4" />
@@ -346,6 +354,7 @@ const PartInventory = () => {
                           size="icon"
                           onClick={() => handleDeletePart(item.id)}
                           title="Delete Item"
+                          disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

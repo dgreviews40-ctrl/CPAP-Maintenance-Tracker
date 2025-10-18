@@ -10,10 +10,9 @@ import PartReplacementHistory from "@/components/PartReplacementHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
-import { useDataRefresh } from "@/contexts/DataRefreshContext";
 
 const Index = () => {
-  const { dataRefreshKey } = useDataRefresh();
+  // Removed useDataRefresh and dataRefreshKey
 
   return (
     <Layout>
@@ -28,16 +27,16 @@ const Index = () => {
           <InventoryAlert />
           
           {/* Dashboard Summary */}
-          <DashboardSummary key={`summary-${dataRefreshKey}`} />
+          <DashboardSummary />
 
           {/* Charts and History */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <InventoryStatusChart key={`inventory-chart-${dataRefreshKey}`} />
-              <PartUsageRateChart key={`usage-chart-${dataRefreshKey}`} dataRefreshKey={dataRefreshKey} />
+              <InventoryStatusChart />
+              <PartUsageRateChart />
             </div>
             <div className="lg:col-span-1">
-              <PartReplacementHistory key={`history-${dataRefreshKey}`} dataRefreshKey={dataRefreshKey} />
+              <PartReplacementHistory />
             </div>
           </div>
 

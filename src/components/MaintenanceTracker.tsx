@@ -12,8 +12,8 @@ import GettingStarted from "./GettingStarted";
 import { showSuccess, showError } from "@/utils/toast";
 import { isBefore, isWithinInterval, addDays, startOfDay, format, subDays } from "date-fns";
 import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, MaintenanceSortOrder } from "./MaintenanceControls";
-import { useDataRefresh } from "@/contexts/DataRefreshContext";
 import { useMaintenanceHistory } from "@/hooks/use-maintenance-history";
+import { useRQClient } from "@/hooks/use-query-client"; // Import RQ Client
 
 // Define MaintenanceEntry here for local use and export for other components
 export interface MaintenanceEntry {
@@ -28,7 +28,7 @@ export interface MaintenanceEntry {
 const MaintenanceTracker = () => {
   const { user } = useUser();
   const { toast } = useToast();
-  const { refreshData } = useDataRefresh();
+  const queryClient = useRQClient(); // Use RQ Client
   const { history, loading: loadingHistory } = useMaintenanceHistory();
   
   const [isSeeding, setIsSeeding] = useState(false);
@@ -50,6 +50,12 @@ const MaintenanceTracker = () => {
     }
   }, [history, loadingHistory]);
 
+  // Function to invalidate all relevant queries after a mutation
+  const invalidateMaintenanceQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['maintenanceHistory'] });
+    queryClient.invalidateQueries({ queryKey: ['userParts'] }); // User parts depend on maintenance entries
+  }, [queryClient]);
+
   // --- CRUD Operations ---
 
   const handleAddEntry = useCallback(async (newEntry: Omit<MaintenanceEntry, 'id' | 'created_at'>): Promise<boolean> => {
@@ -69,9 +75,9 @@ const MaintenanceTracker = () => {
     }
 
     showSuccess("Maintenance entry added successfully!");
-    refreshData(); // Trigger data refresh across the app
+    invalidateMaintenanceQueries(); // Use RQ invalidation
     return true;
-  }, [user, refreshData]);
+  }, [user, invalidateMaintenanceQueries]);
 
   const handleUpdateEntry = useCallback(async (id: string, updatedEntry: Omit<MaintenanceEntry, 'id' | 'created_at'>): Promise<boolean> => {
     const { error } = await supabase
@@ -86,9 +92,9 @@ const MaintenanceTracker = () => {
     }
 
     showSuccess("Maintenance entry updated successfully!");
-    refreshData();
+    invalidateMaintenanceQueries();
     return true;
-  }, [refreshData]);
+  }, [invalidateMaintenanceQueries]);
 
   const handleDeleteEntry = useCallback(async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this maintenance entry?")) return;
@@ -103,9 +109,9 @@ const MaintenanceTracker = () => {
       showError("Failed to delete maintenance entry.");
     } else {
       showSuccess("Maintenance entry deleted.");
-      refreshData();
+      invalidateMaintenanceQueries();
     }
-  }, [refreshData]);
+  }, [invalidateMaintenanceQueries]);
   
   const handleCompleteMaintenance = useCallback(async (id: string, newLastDate: string, newNextDate: string): Promise<boolean> => {
     const { error } = await supabase
@@ -123,11 +129,11 @@ const MaintenanceTracker = () => {
     }
 
     showSuccess("Maintenance completed and next due date calculated!");
-    refreshData();
+    invalidateMaintenanceQueries();
     return true;
-  }, [refreshData]);
+  }, [invalidateMaintenanceQueries]);
 
-  // --- Filtering and Sorting Logic ---
+  // --- Filtering and Sorting Logic (omitted for brevity, remains the same) ---
 
   const filteredAndSortedEntries = useMemo(() => {
     const today = startOfDay(new Date());
@@ -222,7 +228,7 @@ const MaintenanceTracker = () => {
       showError("Failed to load sample data.");
     } else {
       showSuccess("Sample data loaded successfully!");
-      refreshData();
+      invalidateMaintenanceQueries();
     }
     setIsSeeding(false);
   };

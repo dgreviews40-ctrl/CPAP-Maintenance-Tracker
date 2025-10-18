@@ -12,7 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { showSuccess, showError } from "@/utils/toast";
 import { useAllMachines } from "@/hooks/use-all-machines";
-import { cpapMachines } from "@/data/cpap-machines"; // <-- Added import
+import { cpapMachines } from "@/data/cpap-machines";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface CustomMachinePart {
   id: string;
@@ -22,11 +23,33 @@ interface CustomMachinePart {
   reorder_info: string | null;
 }
 
+const fetchCustomParts = async (userId: string | undefined): Promise<CustomMachinePart[]> => {
+  if (!userId) return [];
+  
+  const { data, error } = await supabase
+    .from("user_machines")
+    .select("*")
+    .order("machine_label", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching custom parts:", error);
+    throw new Error("Failed to load custom machine parts.");
+  }
+  return data as CustomMachinePart[];
+};
+
 const MachineManagement = () => {
   const { user } = useAuth();
-  const { allMachines, loading: loadingAllMachines, refetchMachines } = useAllMachines();
-  const [customParts, setCustomParts] = useState<CustomMachinePart[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { allMachines, refetchMachines } = useAllMachines();
+  
+  const { data: customParts = [], isLoading: loading } = useQuery<CustomMachinePart[]>({
+    queryKey: ['customMachineParts', user?.id],
+    queryFn: () => fetchCustomParts(user?.id),
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
   const [isAdding, setIsAdding] = useState(false);
   
   // Form state
@@ -35,30 +58,57 @@ const MachineManagement = () => {
   const [partModelLabel, setPartModelLabel] = useState("");
   const [reorderInfo, setReorderInfo] = useState("");
 
-  const fetchCustomParts = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    
-    const { data, error } = await supabase
-      .from("user_machines")
-      .select("*")
-      .order("machine_label", { ascending: true });
+  const invalidateMachineQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['customMachineParts'] });
+    queryClient.invalidateQueries({ queryKey: ['allMachines'] }); // Must refetch the combined list
+  }, [queryClient]);
 
-    if (error) {
-      console.error("Error fetching custom parts:", error);
-      showError("Failed to load custom machine parts.");
-      setCustomParts([]);
-    } else {
-      setCustomParts(data as CustomMachinePart[]);
+  const addMutation = useMutation({
+    mutationFn: async (newItem: Omit<CustomMachinePart, 'id'>) => {
+      const { error } = await supabase
+        .from("user_machines")
+        .insert([newItem]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Custom part added successfully!");
+      // Reset form
+      setMachineLabel("");
+      setPartTypeLabel("");
+      setPartModelLabel("");
+      setReorderInfo("");
+      setIsAdding(false);
+      invalidateMachineQueries();
+    },
+    onError: (error) => {
+      console.error("Error adding custom part:", error);
+      if ((error as any).code === '23505') { // Unique constraint violation
+        showError("This exact part model already exists for this machine.");
+      } else {
+        showError("Failed to add custom part.");
+      }
     }
-    setLoading(false);
-  }, [user]);
+  });
 
-  useEffect(() => {
-    fetchCustomParts();
-  }, [fetchCustomParts]);
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("user_machines")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Custom part deleted.");
+      invalidateMachineQueries();
+    },
+    onError: (error) => {
+      console.error("Error deleting custom part:", error);
+      showError("Failed to delete custom part.");
+    }
+  });
 
-  const handleAddPart = async () => {
+  const handleAddPart = () => {
     if (!user || !machineLabel || !partTypeLabel || !partModelLabel) {
       showError("All machine, part type, and part model fields are required.");
       return;
@@ -71,50 +121,17 @@ const MachineManagement = () => {
       part_model_label: partModelLabel.trim(),
       reorder_info: reorderInfo.trim() || null,
     };
-
-    const { error } = await supabase
-      .from("user_machines")
-      .insert([newItem]);
-
-    if (error) {
-      console.error("Error adding custom part:", error);
-      if (error.code === '23505') { // Unique constraint violation
-        showError("This exact part model already exists for this machine.");
-      } else {
-        showError("Failed to add custom part.");
-      }
-    } else {
-      showSuccess("Custom part added successfully!");
-      // Reset form
-      setMachineLabel("");
-      setPartTypeLabel("");
-      setPartModelLabel("");
-      setReorderInfo("");
-      setIsAdding(false);
-      fetchCustomParts();
-      refetchMachines(); // Refresh the global machine list
-    }
+    
+    addMutation.mutate(newItem as Omit<CustomMachinePart, 'id'>);
   };
 
-  const handleDeletePart = async (id: string) => {
+  const handleDeletePart = (id: string) => {
     if (!window.confirm("Are you sure you want to delete this custom part definition? This will not affect existing maintenance entries.")) return;
-
-    const { error } = await supabase
-      .from("user_machines")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error("Error deleting custom part:", error);
-      showError("Failed to delete custom part.");
-    } else {
-      showSuccess("Custom part deleted.");
-      fetchCustomParts();
-      refetchMachines(); // Refresh the global machine list
-    }
+    deleteMutation.mutate(id);
   };
   
   const totalMachines = allMachines.length;
+  const defaultMachineCount = cpapMachines.length;
   const customMachineCount = customParts.length;
 
   return (
@@ -181,8 +198,11 @@ const MachineManagement = () => {
                       />
                     </div>
                   </div>
-                  <Button onClick={handleAddPart} disabled={!machineLabel || !partTypeLabel || !partModelLabel}>
-                    Save Custom Part
+                  <Button 
+                    onClick={handleAddPart} 
+                    disabled={!machineLabel || !partTypeLabel || !partModelLabel || addMutation.isPending}
+                  >
+                    {addMutation.isPending ? "Saving..." : "Save Custom Part"}
                   </Button>
                 </div>
               )}
@@ -195,7 +215,7 @@ const MachineManagement = () => {
                 <Wrench className="h-5 w-5 mr-2" /> Your Custom Parts ({customMachineCount})
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                These parts are available alongside {totalMachines - cpapMachines.length} default machines in the maintenance and inventory forms.
+                These parts are available alongside {totalMachines - defaultMachineCount} default machines in the maintenance and inventory forms.
               </p>
             </CardHeader>
             <CardContent>
@@ -234,6 +254,7 @@ const MachineManagement = () => {
                               size="icon"
                               onClick={() => handleDeletePart(item.id)}
                               title="Delete Custom Part"
+                              disabled={deleteMutation.isPending}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>

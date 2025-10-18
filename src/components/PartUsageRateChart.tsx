@@ -25,7 +25,7 @@ interface UsageData {
   recommended_days: number;
 }
 
-const PartUsageRateChart = ({ dataRefreshKey }: { dataRefreshKey: number }) => {
+const PartUsageRateChart = () => { // Removed { dataRefreshKey }: { dataRefreshKey: number }
   const { frequencies, loading: loadingFrequencies } = useCustomFrequencies();
   const [chartData, setChartData] = useState<UsageData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true); // Renamed 'loading' to 'isLoadingData'
@@ -99,7 +99,7 @@ const PartUsageRateChart = ({ dataRefreshKey }: { dataRefreshKey: number }) => {
     };
 
     fetchAndProcessData();
-  }, [loadingFrequencies, frequencies, dataRefreshKey]);
+  }, [loadingFrequencies, frequencies]); // Removed dataRefreshKey dependency
 
   const loadingStatus = loadingFrequencies || isLoadingData; // Renamed 'loading' to 'loadingStatus'
 

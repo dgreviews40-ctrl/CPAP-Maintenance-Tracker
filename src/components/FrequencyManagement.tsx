@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getMaintenanceFrequencyDays } from "@/utils/frequency";
 import { showSuccess, showError } from "@/utils/toast";
-import { useDataRefresh } from "@/contexts/DataRefreshContext";
+import { useQueryClient } from "@tanstack/react-query"; // Import useQueryClient
 
 interface PartFrequencyState {
   [uniqueKey: string]: number | null; // null means reset/use default
@@ -20,7 +20,7 @@ interface PartFrequencyState {
 const FrequencyManagement = () => {
   const { userParts, loading: loadingParts, refetchUserParts } = useUserParts();
   const { frequencies: customFrequencies, loading: loadingCustomFrequencies, updateFrequency } = useCustomFrequencies();
-  const { refreshData } = useDataRefresh();
+  const queryClient = useQueryClient(); // Initialize query client
   
   // State to hold temporary input changes before saving
   const [localFrequencies, setLocalFrequencies] = useState<PartFrequencyState>({});
@@ -74,7 +74,8 @@ const FrequencyManagement = () => {
         delete newState[partKey];
         return newState;
       });
-      refreshData(); // Refresh dashboard/tracker data
+      // Invalidate maintenance history to recalculate next due dates
+      queryClient.invalidateQueries({ queryKey: ['maintenanceHistory'] }); 
     }
     setIsSaving(false);
   };

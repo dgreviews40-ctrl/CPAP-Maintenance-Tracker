@@ -17,7 +17,7 @@ interface PartHistory {
   history: Date[];
 }
 
-const PartReplacementHistory = ({ dataRefreshKey }: { dataRefreshKey: number }) => {
+const PartReplacementHistory = () => { // Removed { dataRefreshKey }: { dataRefreshKey: number }
   const { userParts, loading: loadingUserParts } = useUserParts();
   const [historyData, setHistoryData] = useState<PartHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +80,7 @@ const PartReplacementHistory = ({ dataRefreshKey }: { dataRefreshKey: number }) 
     };
 
     fetchHistory();
-  }, [userParts, dataRefreshKey]);
+  }, [userParts]); // Removed dataRefreshKey dependency
 
   if (loading) {
     return (

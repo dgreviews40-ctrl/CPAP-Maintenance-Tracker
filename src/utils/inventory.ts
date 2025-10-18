@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "./toast";
+import { queryClient } from "@/lib/query-client"; // Import queryClient instance
 
 /**
  * Helper to parse the machine string back into its components.
@@ -73,5 +74,8 @@ export async function decrementInventory(
     showError("Failed to update inventory quantity.");
   } else {
     showSuccess(`Inventory for ${partModelLabel} decremented. Remaining: ${newQuantity}`);
+    // Invalidate relevant queries
+    queryClient.invalidateQueries({ queryKey: ['partInventory'] });
+    queryClient.invalidateQueries({ queryKey: ['userParts'] });
   }
 }
