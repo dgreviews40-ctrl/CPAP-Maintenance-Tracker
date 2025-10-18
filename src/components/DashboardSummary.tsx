@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, CalendarCheck, Wrench, Clock } from "lucide-react";
 import { isBefore, isWithinInterval, addDays, startOfDay, format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
+import { parseMaintenanceMachineString, generateUniqueKey } from "@/utils/parts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Stats {
   overdue: number;
@@ -15,6 +17,7 @@ interface Stats {
     machine: string;
     date: string;
     daysAway: number;
+    uniqueKey: string; // Added uniqueKey
   } | null;
 }
 
@@ -73,10 +76,13 @@ const DashboardSummary = () => {
           // Find the very next item that is not overdue
           if (!nextDueItem && !isBefore(nextMaintenanceDate, today)) {
             const daysAway = differenceInDays(nextMaintenanceDate, today);
+            const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
+            
             nextDueItem = {
               machine: entry.machine,
               date: format(nextMaintenanceDate, 'MMM dd, yyyy'),
               daysAway: daysAway,
+              uniqueKey: generateUniqueKey(machineLabel, partTypeLabel, modelLabel),
             };
           }
         });
@@ -112,6 +118,9 @@ const DashboardSummary = () => {
     );
   }
 
+  const nextDuePartName = stats.nextDue?.machine.split(' - ')[2]?.trim() || stats.nextDue?.machine;
+  const nextDueMachineName = stats.nextDue?.machine.split(' - ')[0]?.trim() || '';
+
   return (
     <div className="grid gap-4 md:grid-cols-4">
       {/* Next Due Card */}
@@ -125,11 +134,15 @@ const DashboardSummary = () => {
         <CardContent>
           {stats.nextDue ? (
             <>
-              <div className="text-xl font-bold truncate" title={stats.nextDue.machine}>
-                {stats.nextDue.machine.split(' - ')[0]}
-              </div>
+              <Link 
+                to={`/part/${encodeURIComponent(stats.nextDue.uniqueKey)}`}
+                className="text-xl font-bold truncate hover:underline" 
+                title={stats.nextDue.machine}
+              >
+                {nextDuePartName}
+              </Link>
               <p className="text-xs text-muted-foreground mt-1">
-                {stats.nextDue.date} ({stats.nextDue.daysAway} days)
+                {nextDueMachineName} | {stats.nextDue.date} ({stats.nextDue.daysAway} days)
               </p>
             </>
           ) : (

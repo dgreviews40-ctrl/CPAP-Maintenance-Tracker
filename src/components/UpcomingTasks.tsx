@@ -8,12 +8,14 @@ import { List, Wrench, CalendarOff } from "lucide-react";
 import { format, isBefore, isWithinInterval, addDays, startOfDay, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { parseMaintenanceMachineString, generateUniqueKey } from "@/utils/parts";
 
 interface UpcomingTask {
   id: string;
   machine: string;
   next_maintenance: string;
   status: 'overdue' | 'due_soon' | 'on_schedule';
+  uniqueKey: string; // Added uniqueKey
 }
 
 const getStatus = (dateStr: string): UpcomingTask['status'] => {
@@ -41,10 +43,14 @@ const UpcomingTasks = () => {
       if (error) {
         console.error("Error fetching upcoming tasks:", error);
       } else if (data) {
-        const processedTasks = data.map(item => ({
-          ...item,
-          status: getStatus(item.next_maintenance),
-        }));
+        const processedTasks = data.map(item => {
+          const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(item.machine);
+          return {
+            ...item,
+            status: getStatus(item.next_maintenance),
+            uniqueKey: generateUniqueKey(machineLabel, partTypeLabel, modelLabel),
+          };
+        });
         setTasks(processedTasks);
       }
       setLoading(false);
@@ -79,7 +85,12 @@ const UpcomingTasks = () => {
               return (
                 <li key={task.id} className="flex items-center justify-between">
                   <div className="flex-1 truncate pr-4">
-                    <p className="font-medium truncate">{task.machine}</p>
+                    <Link 
+                      to={`/part/${encodeURIComponent(task.uniqueKey)}`}
+                      className="font-medium truncate hover:underline"
+                    >
+                      {task.machine}
+                    </Link>
                     <p className="text-sm text-muted-foreground">
                       Due: {format(nextDate, "MMM dd, yyyy")}
                     </p>

@@ -14,11 +14,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Warehouse } from "lucide-react";
 import { useUserParts } from "@/hooks/use-user-parts";
+import InventoryChartTooltip from "./InventoryChartTooltip"; // Import custom tooltip
 
 interface ChartData {
   name: string;
   quantity: number;
   threshold: number;
+  uniqueKey: string; // Added uniqueKey
 }
 
 const InventoryStatusChart = () => {
@@ -37,6 +39,7 @@ const InventoryStatusChart = () => {
       name: `${part.modelLabel} (${part.machineLabel})`,
       quantity: part.quantity!,
       threshold: part.reorderThreshold!,
+      uniqueKey: part.uniqueKey, // Pass the unique key
     }));
 
     setChartData(data);
@@ -84,16 +87,7 @@ const InventoryStatusChart = () => {
                   tickFormatter={(value) => value.length > 20 ? value.substring(0, 17) + '...' : value}
                 />
                 <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))', 
-                    borderRadius: '0.5rem' 
-                  }}
-                  formatter={(value, name) => {
-                    if (name === 'quantity') return [`Current Stock: ${value}`, 'Quantity'];
-                    if (name === 'threshold') return [`Reorder Threshold: ${value}`, 'Threshold'];
-                    return [value, name];
-                  }}
+                  content={InventoryChartTooltip} // <-- Fixed: Pass component reference, not JSX
                 />
                 <Legend />
                 <Bar dataKey="quantity" fill="hsl(var(--primary))" name="Quantity" />

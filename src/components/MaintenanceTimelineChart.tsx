@@ -7,6 +7,8 @@ import { useMaintenanceHistory, MaintenanceEntry } from "@/hooks/use-maintenance
 import { format, parseISO, differenceInDays, startOfDay, isBefore } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { Link } from "react-router-dom"; // Import Link
+import { parseMaintenanceMachineString, generateUniqueKey } from "@/utils/parts"; // Import utilities
 
 interface TimelineTask {
   id: string;
@@ -14,10 +16,11 @@ interface TimelineTask {
   next_maintenance: string;
   daysAway: number;
   status: 'overdue' | 'due_soon' | 'on_schedule';
+  uniqueKey: string; // Added uniqueKey
 }
 
 const getStatus = (dateStr: string, daysAway: number): TimelineTask['status'] => {
-  if (isBefore(startOfDay(parseISO(dateStr)), startOfDay(new Date()))) return 'overdue';
+  if (isBefore(startOfDay(parseISO(dateStr.replace(/-/g, "/"))), startOfDay(new Date()))) return 'overdue';
   if (daysAway <= 7) return 'due_soon';
   return 'on_schedule';
 };
@@ -38,6 +41,7 @@ const MaintenanceTimelineChart = () => {
       .map(entry => {
         const nextDate = startOfDay(parseISO(entry.next_maintenance.replace(/-/g, "/")));
         const daysAway = differenceInDays(nextDate, today);
+        const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
         
         return {
           id: entry.id,
@@ -45,6 +49,7 @@ const MaintenanceTimelineChart = () => {
           next_maintenance: entry.next_maintenance,
           daysAway: daysAway,
           status: getStatus(entry.next_maintenance, daysAway),
+          uniqueKey: generateUniqueKey(machineLabel, partTypeLabel, modelLabel),
         };
       })
       .sort((a, b) => a.daysAway - b.daysAway) // Sort by closest date first
@@ -127,9 +132,12 @@ const MaintenanceTimelineChart = () => {
                 )}>
                   {icon}
                 </span>
-                <h3 className="font-semibold text-base">
+                <Link 
+                  to={`/part/${encodeURIComponent(task.uniqueKey)}`}
+                  className="font-semibold text-base hover:underline"
+                >
                   {partName}
-                </h3>
+                </Link>
                 <p className="text-sm text-muted-foreground mb-1">
                   {machineName}
                 </p>

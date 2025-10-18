@@ -17,3 +17,10 @@ export const parseMaintenanceMachineString = (machineString: string): UniquePart
   const partModel = partModelWithSku.replace(/\s*\(SKU:.*\)/, '').trim();
   return { machineLabel: machine, partTypeLabel: partType, modelLabel: partModel };
 };
+
+/**
+ * Generates the URL-safe unique key used for part detail pages.
+ */
+export const generateUniqueKey = (machineLabel: string, partTypeLabel: string, modelLabel: string): string => {
+  return `${machineLabel}|${partTypeLabel}|${modelLabel}`;
+};
