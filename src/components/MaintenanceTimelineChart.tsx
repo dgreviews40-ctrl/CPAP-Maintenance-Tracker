@@ -20,7 +20,12 @@ interface TimelineTask {
 }
 
 const getStatus = (dateStr: string, daysAway: number): TimelineTask['status'] => {
-  if (isBefore(startOfDay(parseISO(dateStr.replace(/-/g, "/"))), startOfDay(new Date()))) return 'overdue';
+  // Use new Date() with replacement for consistent parsing
+  const nextDate = startOfDay(new Date(dateStr.replace(/-/g, "/")));
+  
+  if (isNaN(nextDate.getTime())) return 'on_schedule'; // Should be filtered out earlier, but safe check
+
+  if (isBefore(nextDate, startOfDay(new Date()))) return 'overdue';
   if (daysAway <= 7) return 'due_soon';
   return 'on_schedule';
 };
@@ -37,7 +42,13 @@ const MaintenanceTimelineChart = () => {
     const tasks: TimelineTask[] = allEntries
       .filter(entry => entry.next_maintenance)
       .map(entry => {
-        const nextDate = startOfDay(parseISO(entry.next_maintenance.replace(/-/g, "/")));
+        // Use new Date() with replacement for consistent parsing
+        const dateString = entry.next_maintenance.replace(/-/g, "/");
+        const rawDate = new Date(dateString);
+        
+        if (isNaN(rawDate.getTime())) return null; // Skip invalid dates
+        
+        const nextDate = startOfDay(rawDate);
         const daysAway = differenceInDays(nextDate, today);
         const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
         
@@ -50,6 +61,7 @@ const MaintenanceTimelineChart = () => {
           uniqueKey: generateUniqueKey(machineLabel, partTypeLabel, modelLabel),
         };
       })
+      .filter((task): task is TimelineTask => task !== null) // Filter out nulls
       .sort((a, b) => a.daysAway - b.daysAway) // Sort by closest date first
       .slice(0, 10); // Show next 10 tasks
 
@@ -141,7 +153,7 @@ const MaintenanceTimelineChart = () => {
                 <time className={cn("block text-sm font-normal leading-none", textColor)}>
                   {isOverdue 
                     ? `Overdue by ${Math.abs(task.daysAway)} days`
-                    : `Due in ${task.daysAway} days (${format(parseISO(task.next_maintenance), "MMM dd, yyyy")})`}
+                    : `Due in ${task.daysAway} days (${format(new Date(task.next_maintenance.replace(/-/g, "/")), "MMM dd, yyyy")})`}
                 </time>
               </li>
             );

@@ -23,10 +23,14 @@ interface UpcomingTask {
 
 const getStatus = (dateStr: string): UpcomingTask['status'] => {
   const today = startOfDay(new Date());
-  const nextDate = startOfDay(new Date(dateStr.replace(/-/g, "/")));
+  const nextDate = new Date(dateStr.replace(/-/g, "/"));
   
-  if (isBefore(nextDate, today)) return 'overdue';
-  if (isWithinInterval(nextDate, { start: today, end: addDays(today, 7) })) return 'due_soon';
+  if (isNaN(nextDate.getTime())) return 'on_schedule'; // Treat invalid dates as on schedule (or skip them entirely)
+  
+  const nextDateStartOfDay = startOfDay(nextDate);
+
+  if (isBefore(nextDateStartOfDay, today)) return 'overdue';
+  if (isWithinInterval(nextDateStartOfDay, { start: today, end: addDays(today, 7) })) return 'due_soon';
   return 'on_schedule';
 };
 
@@ -44,14 +48,16 @@ const fetchUpcomingTasks = async (userId: string | undefined): Promise<UpcomingT
     throw new Error("Failed to fetch upcoming tasks.");
   }
   
-  return data.map(item => {
-    const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(item.machine);
-    return {
-      ...item,
-      status: getStatus(item.next_maintenance),
-      uniqueKey: generateUniqueKey(machineLabel, partTypeLabel, modelLabel),
-    };
-  });
+  return data
+    .filter(item => item.next_maintenance && !isNaN(new Date(item.next_maintenance.replace(/-/g, "/")).getTime()))
+    .map(item => {
+      const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(item.machine);
+      return {
+        ...item,
+        status: getStatus(item.next_maintenance),
+        uniqueKey: generateUniqueKey(machineLabel, partTypeLabel, modelLabel),
+      };
+    });
 };
 
 const UpcomingTasks = () => {
