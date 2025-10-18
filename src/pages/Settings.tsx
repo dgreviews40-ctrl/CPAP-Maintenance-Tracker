@@ -3,8 +3,10 @@
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { User, Wrench, BarChart3, Bell } from "lucide-react";
+import { User, Wrench, BarChart3, Bell, Clock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import NotificationCenter from "@/components/NotificationCenter";
+import FrequencyManagement from "@/components/FrequencyManagement";
 
 interface SettingLinkProps {
   to: string;
@@ -40,7 +42,7 @@ const Settings = () => {
         <main className="w-full max-w-4xl mx-auto space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>General Settings</CardTitle>
+              <CardTitle>Account & Machine Configuration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <SettingLink
@@ -56,12 +58,27 @@ const Settings = () => {
                 title="Machine & Part Management"
                 description="Add custom CPAP machines and parts."
               />
-              <Separator />
+            </CardContent>
+          </Card>
+          
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">Advanced Maintenance Settings</h2>
+            <div className="space-y-6">
+              <FrequencyManagement />
+              <NotificationCenter />
+            </div>
+          </section>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Data & Analytics</CardTitle>
+            </CardHeader>
+            <CardContent>
               <SettingLink
-                to="/reports"
+                to="/analytics"
                 icon={<BarChart3 className="h-5 w-5" />}
-                title="Reports & Advanced Configuration"
-                description="Manage replacement frequencies and view usage reports."
+                title="Reports & Analytics"
+                description="View usage charts, inventory status, and replacement history."
               />
             </CardContent>
           </Card>

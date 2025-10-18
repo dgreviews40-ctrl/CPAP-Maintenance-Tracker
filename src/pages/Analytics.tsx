@@ -2,29 +2,30 @@
 
 import Layout from "@/components/Layout";
 import DataManagement from "@/components/DataManagement";
-import NotificationCenter from "@/components/NotificationCenter";
-import FrequencySettings from "@/components/FrequencySettings";
-import PartUsageRateChart from "@/components/PartUsageRateChart"; // Import the usage chart
-import PartReplacementHistory from "@/components/PartReplacementHistory"; // Import the history component
-import InventoryStatusChart from "@/components/InventoryStatusChart"; // Import the new chart
+import PartUsageRateChart from "@/components/PartUsageRateChart";
+import PartReplacementHistory from "@/components/PartReplacementHistory";
+import InventoryStatusChart from "@/components/InventoryStatusChart";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
-const Reports = () => {
+const Analytics = () => {
   return (
     <Layout>
       <div className="container mx-auto p-4">
         <div className="w-full max-w-6xl mx-auto">
           <div className="mb-8 flex items-center justify-between">
-            <Link to="/">
+            <Link to="/settings">
               <Button variant="outline">
-                <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+                <ArrowLeft className="h-4 w-4 mr-2" /> Back to Settings
               </Button>
             </Link>
             <header className="text-center flex-grow">
-              <h1 className="text-4xl font-bold">Advanced Settings & Reports</h1>
+              <h1 className="text-4xl font-bold">Reports & Analytics</h1>
+              <p className="text-xl text-muted-foreground">
+                Data visualizations for usage, inventory, and compliance.
+              </p>
             </header>
             <div className="w-[150px]">
               {/* Spacer to balance the header */}
@@ -33,13 +34,13 @@ const Reports = () => {
           <main className="space-y-8">
             
             <section>
-              <h2 className="text-2xl font-semibold mb-4">Inventory Reports</h2>
+              <h2 className="text-2xl font-semibold mb-4">Inventory Status</h2>
               <Separator className="mb-4" />
               <InventoryStatusChart />
             </section>
             
             <section>
-              <h2 className="text-2xl font-semibold mb-4">Usage & Compliance Reports</h2>
+              <h2 className="text-2xl font-semibold mb-4">Usage Rate Comparison</h2>
               <Separator className="mb-4" />
               <PartUsageRateChart />
             </section>
@@ -50,18 +51,6 @@ const Reports = () => {
               <PartReplacementHistory />
             </section>
             
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Maintenance Frequencies</h2>
-              <Separator className="mb-4" />
-              <FrequencySettings />
-            </section>
-            
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Notifications</h2>
-              <Separator className="mb-4" />
-              <NotificationCenter />
-            </section>
-
             <section>
               <h2 className="text-2xl font-semibold mb-4">Data Management</h2>
               <Separator className="mb-4" />
@@ -74,4 +63,4 @@ const Reports = () => {
   );
 };
 
-export default Reports;
+export default Analytics;
