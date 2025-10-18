@@ -79,3 +79,28 @@ export async function decrementInventory(
     queryClient.invalidateQueries({ queryKey: ['userParts'] });
   }
 }
+
+/**
+ * Generates an Amazon search URL for a given SKU/Reorder Info.
+ * NOTE: Replace YOUR_AFFILIATE_TAG with the actual tag if known, otherwise use a generic search.
+ */
+export function generateAmazonReorderUrl(reorderInfo: string): string {
+  if (!reorderInfo || reorderInfo === 'N/A') return '';
+  
+  // Use the SKU as the search query
+  const searchQuery = encodeURIComponent(reorderInfo);
+  
+  // Replace 'YOUR_AFFILIATE_TAG' with the actual tag if you have it.
+  // For now, we use a generic search URL.
+  const affiliateTag = "YOUR_AFFILIATE_TAG"; // Placeholder for user's actual tag
+  
+  // Standard Amazon search URL structure
+  let url = `https://www.amazon.com/s?k=${searchQuery}`;
+  
+  // If an affiliate tag is provided, append it
+  if (affiliateTag && affiliateTag !== "YOUR_AFFILIATE_TAG") {
+    url += `&tag=${affiliateTag}`;
+  }
+  
+  return url;
+}

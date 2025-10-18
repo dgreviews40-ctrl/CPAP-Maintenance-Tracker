@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Package, RefreshCw, AlertTriangle, Loader2 } from "lucide-react";
+import { Package, RefreshCw, AlertTriangle, Loader2, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { showError, showSuccess } from "@/utils/toast";
@@ -14,6 +14,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { generateAmazonReorderUrl } from "@/utils/inventory"; // Import the new utility
 
 interface PartInventoryManagerProps {
   uniqueKey: string;
@@ -52,6 +53,7 @@ const PartInventoryManager = ({
 
   const needsReorder = quantity <= threshold;
   const isTracked = initialQuantity !== undefined;
+  const amazonUrl = generateAmazonReorderUrl(initialReorderInfo);
 
   const invalidateQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all(user?.id || 'anonymous') });
@@ -187,9 +189,23 @@ const PartInventoryManager = ({
       <CardContent className="space-y-6">
         
         {needsReorder && isTracked && (
-          <Badge variant="destructive" className="flex items-center w-full justify-center py-2 text-base">
-            <AlertTriangle className="h-4 w-4 mr-2" /> REORDER NEEDED: Only {quantity} left!
-          </Badge>
+          <div className="space-y-3">
+            <Badge variant="destructive" className="flex items-center w-full justify-center py-2 text-base">
+              <AlertTriangle className="h-4 w-4 mr-2" /> REORDER NEEDED: Only {quantity} left!
+            </Badge>
+            
+            {amazonUrl && (
+              <Button 
+                asChild 
+                variant="default" 
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                <a href={amazonUrl} target="_blank" rel="noopener noreferrer">
+                  <ShoppingCart className="h-4 w-4 mr-2" /> Reorder on Amazon
+                </a>
+              </Button>
+            )}
+          </div>
         )}
         
         {/* Current Status */}
