@@ -21,10 +21,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc, subDays, format } from "date-fns";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useUserParts } from "@/hooks/use-user-parts"; // Import useUserParts
+import { useUserParts } from "@/hooks/use-user-parts";
 import { Loader2, Warehouse, History, Database } from "lucide-react";
 import EditMaintenanceDialog from "./EditMaintenanceDialog"; 
-import { Button } from "@/components/ui/button"; // Import Button
+import { Button } from "@/components/ui/button";
 
 export type MaintenanceEntry = {
   id: string;
@@ -62,11 +62,12 @@ const getEntryStatus = (dateStr: string): MaintenanceFilter => {
 
 const MaintenanceTracker = () => {
   const { user, loading: authLoading } = useAuth();
-  const { refetchUserParts } = useUserParts(); // Get the refetch function
+  const { refetchUserParts } = useUserParts();
   const [entries, setEntries] = useState<MaintenanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSeeding, setIsSeeding] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [dataRefreshKey, setDataRefreshKey] = useState(0); // New state for forcing refresh
   
   // State for Controls
   const [filter, setFilter] = useState<MaintenanceFilter>("all");
@@ -227,7 +228,8 @@ const MaintenanceTracker = () => {
       
       // 4. Refresh the UI
       await fetchEntries();
-      await refetchUserParts(); // Crucial step: Refresh the list of unique parts for charts
+      await refetchUserParts(); // Refresh the list of unique parts for charts
+      setDataRefreshKey(prev => prev + 1); // Force chart re-render
 
     } catch (error) {
       console.error("Failed to seed data:", error);
@@ -259,6 +261,7 @@ const MaintenanceTracker = () => {
     showSuccess("Maintenance entry added successfully!");
     fetchEntries();
     refetchUserParts(); // Refresh parts list when a new entry is added
+    setDataRefreshKey(prev => prev + 1); // Force chart re-render
     return true;
   };
 
@@ -282,6 +285,7 @@ const MaintenanceTracker = () => {
     showSuccess("Maintenance entry updated successfully!");
     fetchEntries();
     refetchUserParts(); // Refresh parts list if part details were changed
+    setDataRefreshKey(prev => prev + 1); // Force chart re-render
     return true;
   };
   
@@ -329,6 +333,7 @@ const MaintenanceTracker = () => {
       showSuccess("Entry deleted.");
       fetchEntries();
       refetchUserParts(); // Refresh parts list in case the deleted entry was the last one for a part
+      setDataRefreshKey(prev => prev + 1); // Force chart re-render
     }
   };
 
@@ -404,7 +409,7 @@ const MaintenanceTracker = () => {
           )}
           {/* End Temporary Debug Button */}
 
-          <div key={`charts-${entries.length}`}>
+          <div key={`charts-${dataRefreshKey}`}> {/* Use dataRefreshKey here */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
