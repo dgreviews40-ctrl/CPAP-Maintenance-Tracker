@@ -36,7 +36,7 @@ const fetchCustomFrequencies = async (userId: string | undefined): Promise<Custo
   return data as CustomFrequency[];
 };
 
-const FrequencySettings = () => {
+const NotificationSettings = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
@@ -134,10 +134,8 @@ const FrequencySettings = () => {
     )
   );
 
-  // Use a local variable to ensure it's an array before mapping
-  const currentFrequencies = Array.isArray(customFrequencies) ? customFrequencies : [];
-  
-  const partsWithCustomFrequency = new Set(currentFrequencies.map(f => f.unique_part_key));
+  // Ensure customFrequencies is an array before mapping
+  const partsWithCustomFrequency = new Set((customFrequencies || []).map(f => f.unique_part_key));
   const partsForSelection = availableParts.filter(p => !partsWithCustomFrequency.has(p.key));
 
   return (
@@ -207,7 +205,7 @@ const FrequencySettings = () => {
           <div className="flex justify-center items-center h-32">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
-        ) : currentFrequencies.length === 0 ? (
+        ) : customFrequencies.length === 0 ? (
           <p className="text-center text-muted-foreground">
             No custom maintenance frequencies defined.
           </p>
@@ -224,8 +222,8 @@ const FrequencySettings = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Use the guaranteed array variable */}
-                {currentFrequencies.map((item) => {
+                {/* Safely map over customFrequencies */}
+                {(customFrequencies || []).map((item) => {
                   const { machineLabel, partTypeLabel, partModelLabel } = getPartDetails(item.unique_part_key);
                   return (
                     <TableRow key={item.id}>
@@ -256,4 +254,4 @@ const FrequencySettings = () => {
   );
 };
 
-export default FrequencySettings;
+export default NotificationSettings;

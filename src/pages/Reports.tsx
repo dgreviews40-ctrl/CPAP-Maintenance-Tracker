@@ -2,7 +2,8 @@
 
 import Layout from "@/components/Layout";
 import DataManagement from "@/components/DataManagement";
-import NotificationSettings from "@/components/NotificationSettings";
+import NotificationCenter from "@/components/NotificationCenter"; // Keep NotificationCenter
+import FrequencySettings from "@/components/FrequencySettings"; // Import FrequencySettings
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -29,9 +30,15 @@ const Reports = () => {
           <main className="space-y-8">
             
             <section>
-              <h2 className="text-2xl font-semibold mb-4">Custom Frequencies & Notifications</h2>
+              <h2 className="text-2xl font-semibold mb-4">Maintenance Frequencies</h2>
               <Separator className="mb-4" />
-              <NotificationSettings />
+              <FrequencySettings />
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Notifications</h2>
+              <Separator className="mb-4" />
+              <NotificationCenter />
             </section>
 
             <section>
