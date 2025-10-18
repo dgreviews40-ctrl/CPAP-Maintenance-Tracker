@@ -6,6 +6,7 @@ import { Loader2, Calendar } from "lucide-react";
 import { useUserParts } from "@/hooks/use-user-parts";
 import { format, parseISO } from "date-fns";
 import { Separator } from "@/components/ui/separator";
+import { parseMaintenanceMachineString } from "@/utils/parts"; // Import canonical utility
 
 interface PartHistory {
   uniqueKey: string;
@@ -14,22 +15,6 @@ interface PartHistory {
   modelLabel: string;
   history: Date[];
 }
-
-// Helper to parse the machine string back into its components
-const parseMachineStringForHistory = (machineString: string) => {
-  // Expected format: "Machine Label - Part Type Label - Part Model Label (SKU: XXX)"
-  const parts = machineString.split(' - ');
-  
-  const machine = parts[0]?.trim() || "";
-  const partType = parts[1]?.trim() || "";
-  
-  // Remove SKU info from part model
-  const partModelWithSku = parts[2]?.trim() || "";
-  const partModel = partModelWithSku.replace(/\s*\(SKU:.*\)/, '').trim();
-
-  return { machine, partType, partModel };
-};
-
 
 const PartReplacementHistory = () => {
   const { userParts, loading: loadingUserParts } = useUserParts();
@@ -61,9 +46,10 @@ const PartReplacementHistory = () => {
 
     // Group maintenance dates by unique part key
     data.forEach((entry) => {
-      const { machine, partType, partModel } = parseMachineStringForHistory(entry.machine);
-      if (machine && partType && partModel) {
-        const key = `${machine}|${partType}|${partModel}`;
+      const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
+      
+      if (machineLabel && partTypeLabel && modelLabel) {
+        const key = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
         
         // Ensure date string is present and handle timezone adjustment for parsing
         const dateString = entry.last_maintenance?.replace(/-/g, "/");

@@ -7,6 +7,7 @@ import { Loader2, CalendarDays } from "lucide-react";
 import { useUserParts } from "@/hooks/use-user-parts";
 import { format, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
+import { parseMaintenanceMachineString } from "@/utils/parts"; // Import canonical utility
 
 interface ReplacementEvent {
   date: Date;
@@ -20,19 +21,6 @@ interface PartHistory {
   modelLabel: string;
   history: ReplacementEvent[];
 }
-
-// Helper to parse the machine string back into its components
-const parseMachineStringForHistory = (machineString: string) => {
-  const parts = machineString.split(' - ');
-  
-  const machine = parts[0]?.trim() || "";
-  const partType = parts[1]?.trim() || "";
-  
-  const partModelWithSku = parts[2]?.trim() || "";
-  const partModel = partModelWithSku.replace(/\s*\(SKU:.*\)/, '').trim();
-
-  return { machine, partType, partModel };
-};
 
 // --- Data Fetching Logic ---
 
@@ -64,9 +52,10 @@ const useMaintenanceHistory = () => {
     const rawHistoryMap = new Map<string, Date[]>();
 
     data.forEach((entry) => {
-      const { machine, partType, partModel } = parseMachineStringForHistory(entry.machine);
-      if (machine && partType && partModel) {
-        const key = `${machine}|${partType}|${partModel}`;
+      const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
+      
+      if (machineLabel && partTypeLabel && modelLabel) {
+        const key = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
         
         const dateString = entry.last_maintenance?.replace(/-/g, "/");
         if (!dateString) return;
@@ -209,7 +198,7 @@ const MaintenanceTimeline = () => {
                       </span>
                     )}
                     <span className={cn("text-[10px]", isToday && "font-bold text-primary")}>
-                      {format(day, 'd')}
+                        {format(day, 'd')}
                     </span>
                   </div>
                 );

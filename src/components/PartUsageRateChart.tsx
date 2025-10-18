@@ -17,7 +17,7 @@ import { Loader2, TrendingUp } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
 import { useCustomFrequencies } from "@/hooks/use-custom-frequencies";
 import { getMaintenanceFrequencyDays } from "@/utils/frequency";
-import { parseMachineStringForInventory } from "@/utils/inventory"; // Reusing the parser
+import { parseMaintenanceMachineString } from "@/utils/parts"; // Use canonical parser
 
 interface UsageData {
   part: string;
@@ -52,7 +52,7 @@ const PartUsageRateChart = () => {
         const groupedEntries: Record<string, { dates: Date[], recommended: number }> = {};
 
         data.forEach((entry) => {
-          const { machineLabel, partTypeLabel, partModelLabel } = parseMachineStringForInventory(entry.machine);
+          const { machineLabel, partTypeLabel, modelLabel: partModelLabel } = parseMaintenanceMachineString(entry.machine);
           
           if (!machineLabel || !partTypeLabel || !partModelLabel) return;
 
