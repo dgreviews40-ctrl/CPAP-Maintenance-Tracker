@@ -155,10 +155,21 @@ const MaintenanceTracker = () => {
 
       // 2. Define seed data
       const today = new Date();
+      const filterPart = "ResMed AirSense 11 - Filter - Standard Filter (30-day) (SKU: ResMed SKU 37301)";
+      
       const seedMaintenanceData = [
+        // Older entry for usage rate calculation (90 days ago)
         {
           user_id: user.id,
-          machine: "ResMed AirSense 11 - Filter - Standard Filter (30-day) (SKU: ResMed SKU 37301)",
+          machine: filterPart,
+          last_maintenance: format(subDays(today, 90), 'yyyy-MM-dd'),
+          next_maintenance: format(subDays(today, 60), 'yyyy-MM-dd'), 
+          notes: "Sample historical entry for usage rate calculation."
+        },
+        // Current overdue entry (45 days ago)
+        {
+          user_id: user.id,
+          machine: filterPart,
           last_maintenance: format(subDays(today, 45), 'yyyy-MM-dd'),
           next_maintenance: format(subDays(today, 15), 'yyyy-MM-dd'), // Overdue
           notes: "Sample overdue entry."
