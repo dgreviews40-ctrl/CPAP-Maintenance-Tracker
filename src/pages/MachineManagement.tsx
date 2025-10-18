@@ -14,9 +14,10 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useAllMachines } from "@/hooks/use-all-machines";
 import { cpapMachines } from "@/data/cpap-machines";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom"; // Import Link
-import { isCustomPartReferenced } from "@/utils/data-integrity"; // Import the new utility
-import { queryKeys } from "@/lib/queryKeys"; // Import queryKeys
+import { Link } from "react-router-dom";
+import { isCustomPartReferenced } from "@/utils/data-integrity";
+import { queryKeys } from "@/lib/queryKeys";
+import AddCustomPartDialog from "@/components/AddCustomPartDialog"; // Import the new component
 
 interface CustomMachinePart {
   id: string;
@@ -53,45 +54,12 @@ const MachineManagement = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
-  const [isAdding, setIsAdding] = useState(false);
-  
-  // Form state
-  const [machineLabel, setMachineLabel] = useState("");
-  const [partTypeLabel, setPartTypeLabel] = useState("");
-  const [partModelLabel, setPartModelLabel] = useState("");
-  const [reorderInfo, setReorderInfo] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const invalidateMachineQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: queryKeys.machines.customParts(user?.id || 'anonymous') });
     queryClient.invalidateQueries({ queryKey: queryKeys.machines.all(user?.id || 'anonymous') }); // Must refetch the combined list
   }, [queryClient, user]);
-
-  const addMutation = useMutation({
-    mutationFn: async (newItem: Omit<CustomMachinePart, 'id'>) => {
-      const { error } = await supabase
-        .from("user_machines")
-        .insert([newItem]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      showSuccess("Custom part added successfully!");
-      // Reset form
-      setMachineLabel("");
-      setPartTypeLabel("");
-      setPartModelLabel("");
-      setReorderInfo("");
-      setIsAdding(false);
-      invalidateMachineQueries();
-    },
-    onError: (error) => {
-      console.error("Error adding custom part:", error);
-      if ((error as any).code === '23505') { // Unique constraint violation
-        showError("This exact part model already exists for this machine.");
-      } else {
-        showError("Failed to add custom part.");
-      }
-    }
-  });
 
   const deleteMutation = useMutation({
     mutationFn: async (item: CustomMachinePart) => {
@@ -123,23 +91,6 @@ const MachineManagement = () => {
     }
   });
 
-  const handleAddPart = () => {
-    if (!user || !machineLabel || !partTypeLabel || !partModelLabel) {
-      showError("All machine, part type, and part model fields are required.");
-      return;
-    }
-
-    const newItem = {
-      user_id: user.id,
-      machine_label: machineLabel.trim(),
-      part_type_label: partTypeLabel.trim(),
-      part_model_label: partModelLabel.trim(),
-      reorder_info: reorderInfo.trim() || null,
-    };
-    
-    addMutation.mutate(newItem as Omit<CustomMachinePart, 'id'>);
-  };
-
   const handleDeletePart = (item: CustomMachinePart) => {
     if (!window.confirm(`Are you sure you want to delete the custom part definition: ${item.part_model_label} (${item.machine_label})?`)) return;
     deleteMutation.mutate(item);
@@ -147,7 +98,7 @@ const MachineManagement = () => {
   
   const totalMachines = allMachines.length;
   const defaultMachineCount = cpapMachines.length;
-  const customMachineCount = customParts.length;
+  const customPartCount = customParts.length;
 
   return (
     <Layout>
@@ -178,67 +129,19 @@ const MachineManagement = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => setIsAdding(!isAdding)} className="mb-4">
-                  {isAdding ? "Hide Form" : "Show Form"}
+                <p className="text-sm text-muted-foreground mb-4">
+                  Click below to define a new machine or part model that will be available in the maintenance and inventory forms.
+                </p>
+                <Button onClick={() => setIsAddDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" /> Add New Custom Part
                 </Button>
-                
-                {isAdding && (
-                  <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label htmlFor="machineLabel">Machine Name (e.g., My Custom CPAP)</Label>
-                        <Input
-                          id="machineLabel"
-                          value={machineLabel}
-                          onChange={(e) => setMachineLabel(e.target.value)}
-                          placeholder="Machine Label"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="partTypeLabel">Part Type (e.g., Custom Filter)</Label>
-                        <Input
-                          id="partTypeLabel"
-                          value={partTypeLabel}
-                          onChange={(e) => setPartTypeLabel(e.target.value)}
-                          placeholder="Part Type Label"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label htmlFor="partModelLabel">Part Model (e.g., HEPA Filter 2000)</Label>
-                        <Input
-                          id="partModelLabel"
-                          value={partModelLabel}
-                          onChange={(e) => setPartModelLabel(e.target.value)}
-                          placeholder="Part Model Label"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="reorderInfo">Reorder Info / SKU (Optional)</Label>
-                        <Input
-                          id="reorderInfo"
-                          value={reorderInfo}
-                          onChange={(e) => setReorderInfo(e.target.value)}
-                          placeholder="SKU or link"
-                        />
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={handleAddPart} 
-                      disabled={!machineLabel || !partTypeLabel || !partModelLabel || addMutation.isPending}
-                    >
-                      {addMutation.isPending ? "Saving..." : "Save Custom Part"}
-                    </Button>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Wrench className="h-5 w-5 mr-2" /> Your Custom Parts ({customMachineCount})
+                  <Wrench className="h-5 w-5 mr-2" /> Your Custom Parts ({customPartCount})
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   These parts are available alongside {totalMachines - defaultMachineCount} default machines in the maintenance and inventory forms.
@@ -296,6 +199,12 @@ const MachineManagement = () => {
           </main>
         </div>
       </div>
+      
+      <AddCustomPartDialog 
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onPartAdded={invalidateMachineQueries}
+      />
     </Layout>
   );
 };
