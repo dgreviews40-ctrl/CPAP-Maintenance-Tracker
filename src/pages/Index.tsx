@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import DashboardTabs from "@/components/DashboardTabs";
-import MaintenanceSchedule from "@/components/MaintenanceSchedule"; // Use MaintenanceSchedule for Overview
+import DashboardOverview from "@/components/DashboardOverview"; // Use DashboardOverview for Overview
 import MaintenanceLog from "@/components/MaintenanceLog"; // Use MaintenanceLog for Maintenance tab
 import Inventory from "@/components/Inventory"; // Use Inventory for Inventory tab
 import MachineConfiguration from "@/components/MachineConfiguration"; // Import MachineConfiguration
@@ -48,7 +48,7 @@ const Index = () => {
           <div className="mt-6">
             {/* Overview Tab: Contains charts and summary widgets */}
             <TabsContent value="overview">
-              <MaintenanceSchedule />
+              <DashboardOverview />
             </TabsContent>
             
             {/* Maintenance Tab: Contains the form and the list/tracker */}
