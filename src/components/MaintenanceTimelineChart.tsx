@@ -34,6 +34,7 @@ const MaintenanceTimelineChart = () => {
   const { history, loading: loadingHistory } = useMaintenanceHistory();
 
   const timelineTasks = useMemo(() => {
+    // Crucial check: If loading, return empty array immediately.
     if (loadingHistory) return [];
 
     const allEntries = Object.values(history).flat();
@@ -66,7 +67,7 @@ const MaintenanceTimelineChart = () => {
       .slice(0, 10); // Show next 10 tasks
 
     return tasks;
-  }, [history, loadingHistory]);
+  }, [history, loadingHistory]); // Depend on history and loading state
 
   if (loadingHistory) {
     return (
