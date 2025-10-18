@@ -20,14 +20,14 @@ interface BreakdownData {
   value: number; // Count of maintenance tasks for this part type
 }
 
-// Define colors for the chart slices (using Tailwind colors)
+// Define colors for the chart slices using high-contrast hex codes
 const COLORS = [
-  "hsl(var(--primary))", 
-  "hsl(var(--secondary))", 
-  "hsl(var(--yellow-500))", 
-  "hsl(var(--destructive))",
-  "hsl(210 40% 98%)", // Light gray/off-white for dark mode contrast
-  "hsl(217 33% 17%)", // Muted blue
+  "#0088FE", // Blue
+  "#00C49F", // Green
+  "#FFBB28", // Yellow/Gold
+  "#FF8042", // Orange
+  "#8884D8", // Purple
+  "#D04848", // Red
 ];
 
 const PartTypeBreakdownChart = () => {
