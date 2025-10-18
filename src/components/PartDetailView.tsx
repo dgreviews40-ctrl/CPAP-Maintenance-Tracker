@@ -11,22 +11,54 @@ import { format, parseISO } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import PartImageUploader from "./PartImageUploader"; // Import the new component
-import { useRQClient } from "@/hooks/use-query-client"; // Import RQ Client for manual refetch
+import PartImageUploader from "./PartImageUploader";
+import { useRQClient } from "@/hooks/use-query-client";
+import { useAllMachines } from "@/hooks/use-all-machines"; // Import useAllMachines
 
 interface PartDetailViewProps {
   uniqueKey: string;
 }
 
+// Helper function to parse uniqueKey into labels
+const parseUniqueKey = (key: string) => {
+  const [machineLabel, partTypeLabel, modelLabel] = key.split('|');
+  return { machineLabel, partTypeLabel, modelLabel };
+};
+
 const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
-  const { userParts, loading: loadingParts, refetchUserParts } = useUserParts();
+  const { userParts, loading: loadingParts } = useUserParts();
+  const { allMachines, loading: loadingAllMachines } = useAllMachines(); // Get all machines
   const { frequencies, loading: loadingFrequencies } = useCustomFrequencies();
   const { history, loading: loadingHistory } = useMaintenanceHistory();
   const queryClient = useRQClient();
 
-  const loading = loadingParts || loadingFrequencies || loadingHistory;
+  const loading = loadingParts || loadingFrequencies || loadingHistory || loadingAllMachines;
 
-  const partDetails: PartData | undefined = userParts.find(p => p.uniqueKey === uniqueKey);
+  const { machineLabel, partTypeLabel, modelLabel } = parseUniqueKey(uniqueKey);
+  
+  // 1. Try to find details in userParts (which includes inventory/history data)
+  let partDetails: PartData | undefined = userParts.find(p => p.uniqueKey === uniqueKey);
+  
+  // 2. If not found in userParts, construct minimal details from allMachines
+  if (!partDetails && !loadingAllMachines) {
+    const machineData = allMachines.find(m => m.label === machineLabel);
+    const partTypeData = machineData?.parts.find(p => p.label === partTypeLabel);
+    const modelData = partTypeData?.models.find(m => m.label === modelLabel);
+
+    if (modelData) {
+      // Construct a minimal PartData object
+      partDetails = {
+        machineLabel,
+        partTypeLabel,
+        modelLabel,
+        reorderInfo: modelData.reorder_info,
+        uniqueKey: uniqueKey,
+        imageUrl: partTypeData?.image_url, // Use default image URL
+        // Inventory/Quantity fields will be undefined
+      };
+    }
+  }
+
   const partHistory: MaintenanceEntry[] = history[uniqueKey] || [];
   
   const defaultFrequency = partDetails ? getMaintenanceFrequencyDays(partDetails.partTypeLabel) : null;
@@ -56,13 +88,14 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
         <CardHeader><CardTitle>Part Not Found</CardTitle></CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            This part key is not currently tracked in your maintenance entries or inventory.
+            This part key is not defined in any machine configuration.
           </p>
         </CardContent>
       </Card>
     );
   }
   
+  // Since partDetails might be minimally constructed, we check inventory status safely
   const needsReorder = partDetails.quantity !== undefined && partDetails.reorderThreshold !== undefined && partDetails.quantity <= partDetails.reorderThreshold;
 
   return (
@@ -124,6 +157,9 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
                   <AlertTriangle className="h-3 w-3 mr-1" /> Reorder Needed
                 </Badge>
               )}
+              {partDetails.quantity === undefined && (
+                <p className="text-xs text-muted-foreground mt-2">Not tracked in Inventory.</p>
+              )}
             </CardContent>
           </Card>
           
@@ -140,6 +176,9 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
               <p className="text-xs text-muted-foreground">
                 Last Maintenance: {partHistory[0]?.last_maintenance ? format(parseISO(partHistory[0].last_maintenance), 'MMM dd, yyyy') : 'N/A'}
               </p>
+              {partHistory.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-2">No maintenance recorded.</p>
+              )}
             </CardContent>
           </Card>
           
