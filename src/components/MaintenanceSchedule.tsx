@@ -1,6 +1,5 @@
 "use client";
 
-import MaintenanceTracker from "@/components/MaintenanceTracker";
 import DashboardSummary from "./DashboardSummary";
 import InventoryAlert from "./InventoryAlert";
 import UpcomingTasks from "./UpcomingTasks";
@@ -25,11 +24,6 @@ const MaintenanceSchedule = () => {
         <LowInventoryWidget />
       </div>
 
-      <Separator />
-
-      <h2 className="text-2xl font-bold">Maintenance Log & Schedule</h2>
-      <MaintenanceTracker />
-      
       <Separator />
 
       <h2 className="text-2xl font-bold">Reports & Insights</h2>
