@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Package, Plus, Minus, Trash2, AlertTriangle } from "lucide-react";
+import { Loader2, Package, Plus, Minus, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { showSuccess, showError } from "@/utils/toast";
@@ -14,11 +14,17 @@ import { format } from "date-fns";
 import { MachineCombobox } from "./MachineCombobox";
 import { PartCombobox } from "./PartCombobox";
 import { ModelCombobox } from "./ModelCombobox";
-import { cpapMachines } from "@/data/cpap-machines";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAllMachines } from "@/hooks/use-all-machines";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface InventoryItem {
   id: string;
@@ -55,7 +61,7 @@ const fetchInventory = async (userId: string | undefined): Promise<InventoryItem
 const PartInventory = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { allMachines } = useAllMachines(); // Use allMachines for combobox options
+  const { allMachines } = useAllMachines();
 
   const { data: inventory = [], isLoading: loading, refetch: refetchInventory } = useQuery<InventoryItem[]>({
     queryKey: ['partInventory', user?.id],
@@ -71,6 +77,12 @@ const PartInventory = () => {
   const [partModel, setPartModel] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [reorderThreshold, setReorderThreshold] = useState(0);
+  
+  // Restock Dialog State
+  const [isRestockDialogOpen, setIsRestockDialogOpen] = useState(false);
+  const [restockItem, setRestockItem] = useState<InventoryItem | null>(null);
+  const [restockAmount, setRestockAmount] = useState(1);
+
 
   // Derived state for comboboxes
   const machineData = allMachines.find(m => m.label === machine);
@@ -169,17 +181,8 @@ const PartInventory = () => {
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 0) return;
 
-    const currentItem = inventory.find(item => item.id === id);
-    if (!currentItem) return;
-
-    const updateData: Partial<InventoryItem> = { quantity: newQuantity };
-    
-    // If quantity increases, update last_restock date
-    if (newQuantity > currentItem.quantity) {
-        updateData.last_restock = format(new Date(), 'yyyy-MM-dd');
-    }
-
-    updateMutation.mutate({ id, updateData });
+    // Note: We no longer update last_restock here, only quantity
+    updateMutation.mutate({ id, updateData: { quantity: newQuantity } });
   };
   
   const handleUpdateThreshold = (id: string, newThreshold: number) => {
@@ -190,6 +193,38 @@ const PartInventory = () => {
   const handleDeletePart = (id: string) => {
     if (!window.confirm("Are you sure you want to delete this inventory item?")) return;
     deleteMutation.mutate(id);
+  };
+  
+  const openRestockDialog = (item: InventoryItem) => {
+    setRestockItem(item);
+    setRestockAmount(1); // Default to 1
+    setIsRestockDialogOpen(true);
+  };
+  
+  const handleRestock = () => {
+    if (!restockItem || restockAmount <= 0) return;
+    
+    const newQuantity = restockItem.quantity + restockAmount;
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    updateMutation.mutate({ 
+      id: restockItem.id, 
+      updateData: { 
+        quantity: newQuantity,
+        last_restock: today,
+      } 
+    }, {
+      onSuccess: () => {
+        showSuccess(`${restockAmount} units of ${restockItem.part_model_label} restocked!`);
+        setIsRestockDialogOpen(false);
+        setRestockItem(null);
+        invalidateInventoryQueries();
+      },
+      onError: (error) => {
+        console.error("Error during restock:", error);
+        showError("Failed to process restock.");
+      }
+    });
   };
 
   return (
@@ -284,7 +319,7 @@ const PartInventory = () => {
           </p>
         ) : (
           <div className="border rounded-lg overflow-x-auto">
-            <Table>
+            <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
                   <TableHead>Machine</TableHead>
@@ -293,7 +328,7 @@ const PartInventory = () => {
                   <TableHead className="text-center">Quantity</TableHead>
                   <TableHead className="text-center">Threshold</TableHead>
                   <TableHead>Last Restock</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-right w-[200px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -335,24 +370,15 @@ const PartInventory = () => {
                             })()
                           : "N/A"}
                       </TableCell>
-                      <TableCell className="text-right space-x-1">
+                      <TableCell className="text-right space-x-1 flex items-center justify-end">
                         <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                          title="Increase Quantity (Restock)"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => openRestockDialog(item)}
+                          title="Log Restock"
                           disabled={updateMutation.isPending}
                         >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= 0 || updateMutation.isPending}
-                          title="Decrease Quantity"
-                        >
-                          <Minus className="h-4 w-4" />
+                          <RefreshCw className="h-4 w-4 mr-1" /> Restock
                         </Button>
                         <Button
                           variant="ghost"
@@ -372,6 +398,41 @@ const PartInventory = () => {
           </div>
         )}
       </CardContent>
+      
+      {/* Restock Dialog */}
+      <Dialog open={isRestockDialogOpen} onOpenChange={setIsRestockDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Restock {restockItem?.part_model_label}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="restock-amount">Quantity to Add</Label>
+              <Input
+                id="restock-amount"
+                type="number"
+                value={restockAmount}
+                onChange={(e) => setRestockAmount(Math.max(1, Number(e.target.value)))}
+                min="1"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Current Stock: {restockItem?.quantity || 0}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRestockDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRestock} 
+              disabled={restockAmount <= 0 || updateMutation.isPending}
+            >
+              {updateMutation.isPending ? "Processing..." : "Confirm Restock"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
