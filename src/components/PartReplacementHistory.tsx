@@ -7,7 +7,7 @@ import { useUserParts } from "@/hooks/use-user-parts";
 import { format, parseISO } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { parseMaintenanceMachineString } from "@/utils/parts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Added Card imports
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PartHistory {
   uniqueKey: string;
@@ -17,7 +17,7 @@ interface PartHistory {
   history: Date[];
 }
 
-const PartReplacementHistory = () => { // Removed { dataRefreshKey }: { dataRefreshKey: number }
+const PartReplacementHistory = () => {
   const { userParts, loading: loadingUserParts } = useUserParts();
   const [historyData, setHistoryData] = useState<PartHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +51,8 @@ const PartReplacementHistory = () => { // Removed { dataRefreshKey }: { dataRefr
 
         const key = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
         const dateString = entry.last_maintenance?.replace(/-/g, "/");
+        
+        // Ensure dateString is a non-empty string before parsing
         if (!dateString) return;
 
         const date = parseISO(dateString);
@@ -80,7 +82,7 @@ const PartReplacementHistory = () => { // Removed { dataRefreshKey }: { dataRefr
     };
 
     fetchHistory();
-  }, [userParts]); // Removed dataRefreshKey dependency
+  }, [userParts]);
 
   if (loading) {
     return (
