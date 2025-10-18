@@ -17,7 +17,7 @@ import { useRQClient } from "@/hooks/use-query-client";
 import { useAllMachines } from "@/hooks/use-all-machines";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast"; // Import showSuccess
 
 interface PartDetailViewProps {
   uniqueKey: string;
@@ -100,7 +100,9 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
     
     // Define the path in storage: user_id/unique_key_hash.ext
     const fileExt = file.name.split('.').pop();
-    const filePath = `${user.id}/${uniqueKey.replace(/\|/g, '_')}.${fileExt}`;
+    // Use a simple, URL-safe version of the unique key for the file name
+    const safeUniqueKey = uniqueKey.replace(/\|/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    const filePath = `${user.id}/${safeUniqueKey}.${fileExt}`;
 
     try {
       // 1. Upload file to Supabase Storage
@@ -109,6 +111,7 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true, // Overwrite existing file
+          contentType: file.type, // Ensure correct content type
         });
 
       if (uploadError) throw uploadError;
@@ -127,6 +130,7 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
       
       if (dbError) throw dbError;
 
+      showSuccess("Image uploaded and saved successfully!");
       handleImageUpdated();
     } catch (error) {
       console.error("Upload or save error:", error);
