@@ -7,11 +7,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/use-auth";
 import { Toaster } from "@/components/ui/toaster";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile"; // Import the new Profile page
 import Inventory from "./pages/Inventory";
 import MachineManagement from "./pages/MachineManagement";
-import Reports from "./pages/Reports"; // Import the new Reports page
+import Reports from "./pages/Reports";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/query-client"; // Import queryClient
+import { queryClient } from "./lib/query-client";
 
 function App() {
   return (
@@ -24,9 +25,10 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Index />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/profile" element={<Profile />} /> {/* New Profile Route */}
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/machine-management" element={<MachineManagement />} />
-              <Route path="/reports" element={<Reports />} /> {/* New Reports Route */}
+              <Route path="/reports" element={<Reports />} />
             </Route>
           </Routes>
         </Router>
