@@ -1,72 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, PieChart as PieChartIcon } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { parseMaintenanceMachineString } from "@/utils/parts";
 import { useMaintenanceHistory } from "@/hooks/use-maintenance-history";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { parseMaintenanceMachineString } from "@/utils/parts";
 
-interface BreakdownData {
-  name: string; // Part Type Label (e.g., 'Filter', 'Tubing')
-  value: number; // Count of maintenance tasks for this part type
+// Define colors for the chart segments
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+interface ChartData {
+  name: string;
+  value: number;
 }
-
-// Define colors for the chart slices using high-contrast hex codes
-const COLORS = [
-  "#0088FE", // Blue
-  "#00C49F", // Green
-  "#FFBB28", // Yellow/Gold
-  "#FF8042", // Orange
-  "#8884D8", // Purple
-  "#D04848", // Red
-];
 
 const PartTypeBreakdownChart = () => {
   const { history, loading: loadingHistory } = useMaintenanceHistory();
-  const [chartData, setChartData] = useState<BreakdownData[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (loadingHistory) return;
+  const chartData = useMemo<ChartData[]>(() => {
+    if (loadingHistory) return [];
 
+    const partTypeCounts = new Map<string, number>();
+    
+    // Flatten all maintenance entries
     const allEntries = Object.values(history).flat();
-    const breakdownMap = new Map<string, number>();
 
     allEntries.forEach(entry => {
-      // We only care about the part type label for this chart
       const { partTypeLabel } = parseMaintenanceMachineString(entry.machine);
-      
       if (partTypeLabel) {
-        const currentCount = breakdownMap.get(partTypeLabel) || 0;
-        breakdownMap.set(partTypeLabel, currentCount + 1);
+        partTypeCounts.set(partTypeLabel, (partTypeCounts.get(partTypeLabel) || 0) + 1);
       }
     });
 
-    const processedData: BreakdownData[] = Array.from(breakdownMap.entries())
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value); // Sort by count descending
-
-    setChartData(processedData);
-    setLoading(false);
+    // Convert map to array format for Recharts
+    const data: ChartData[] = Array.from(partTypeCounts.entries()).map(([name, value]) => ({
+      name,
+      value,
+    }));
+    
+    // Sort by value descending
+    return data.sort((a, b) => b.value - a.value);
   }, [history, loadingHistory]);
 
-  const totalTasks = chartData.reduce((sum, item) => sum + item.value, 0);
-
-  if (loading) {
+  if (loadingHistory) {
     return (
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center text-lg">
-            <PieChartIcon className="h-5 w-5 mr-2" /> Maintenance Breakdown by Part Type
+            <PieChartIcon className="h-5 w-5 mr-2" /> Part Type Breakdown
           </CardTitle>
         </CardHeader>
         <CardContent className="h-64 flex items-center justify-center">
@@ -75,18 +57,18 @@ const PartTypeBreakdownChart = () => {
       </Card>
     );
   }
-
-  if (totalTasks === 0) {
+  
+  if (chartData.length === 0) {
     return (
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center text-lg">
-            <PieChartIcon className="h-5 w-5 mr-2" /> Maintenance Breakdown by Part Type
+            <PieChartIcon className="h-5 w-5 mr-2" /> Part Type Breakdown
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-48 flex items-center justify-center text-muted-foreground">
-            No maintenance history recorded to calculate part breakdown.
+            No maintenance history recorded to generate breakdown.
           </div>
         </CardContent>
       </Card>
@@ -97,41 +79,34 @@ const PartTypeBreakdownChart = () => {
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center text-lg">
-          <PieChartIcon className="h-5 w-5 mr-2" /> Maintenance Breakdown by Part Type
+          <PieChartIcon className="h-5 w-5 mr-2" /> Part Type Breakdown
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                fill="#8884d8"
-                paddingAngle={5}
-                dataKey="value"
-                labelLine={false}
-                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
-                  border: '1px solid hsl(var(--border))', 
-                  borderRadius: '0.5rem' 
-                }}
-                formatter={(value, name, props) => [`${value} tasks`, props.payload.name]}
-              />
-              <Legend layout="vertical" align="right" verticalAlign="middle" />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+      <CardContent className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill="#8884d8"
+              labelLine={false}
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value, name, props) => [`${value} entries`, name]}
+              contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: '0.5rem' }}
+            />
+            <Legend layout="vertical" verticalAlign="middle" align="right" />
+          </PieChart>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );
