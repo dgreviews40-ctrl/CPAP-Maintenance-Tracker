@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Link } from "react-router-dom"; // Import Link
 
 interface InventoryItem {
   id: string;
@@ -334,12 +335,17 @@ const PartInventory = () => {
               <TableBody>
                 {inventory.map((item) => {
                   const needsReorder = item.quantity <= item.reorder_threshold;
+                  // Create the unique key for the detail link
+                  const uniqueKey = `${item.machine_label}|${item.part_type_label}|${item.part_model_label}`;
+                  
                   return (
                     <TableRow key={item.id} className={cn(needsReorder && "bg-red-900/10 hover:bg-red-900/20")}>
                       <TableCell className="font-medium">{item.machine_label}</TableCell>
                       <TableCell>{item.part_type_label}</TableCell>
                       <TableCell>
-                        <span className="font-medium">{item.part_model_label}</span>
+                        <Link to={`/part/${encodeURIComponent(uniqueKey)}`} className="hover:underline text-primary font-medium">
+                          {item.part_model_label}
+                        </Link>
                         {item.reorder_info && (
                           <span className="text-xs text-muted-foreground block">SKU: {item.reorder_info}</span>
                         )}
