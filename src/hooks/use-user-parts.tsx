@@ -98,6 +98,9 @@ export function useUserParts() {
       
       const inventoryStatus = inventoryMap.get(key);
 
+      // IMPORTANT: Only include the part if we can successfully map it back to the hardcoded data
+      // OR if it's a custom part (which should be handled by useAllMachines, but useUserParts needs to be robust)
+      // Since we are only using hardcoded parts for now, we rely on modelData being found.
       if (modelData) {
         partsMap.set(key, {
           machineLabel,
