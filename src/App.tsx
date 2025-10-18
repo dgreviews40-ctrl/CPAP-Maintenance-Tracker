@@ -10,6 +10,8 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import MachineManagement from "./pages/MachineManagement";
 import Reports from "./pages/Reports";
+import PartDetail from "./pages/PartDetail";
+import NotFound from "./pages/NotFound"; // Added import
 import ToastProvider from "./components/ToastProvider";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/query-client";
@@ -31,7 +33,11 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/machine-management" element={<MachineManagement />} />
                 <Route path="/reports" element={<Reports />} />
+                <Route path="/part/:uniqueKey" element={<PartDetail />} />
               </Route>
+              
+              {/* Catch-all for 404 */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </ProfileProvider>
         </AuthProvider>
