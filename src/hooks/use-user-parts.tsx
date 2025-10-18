@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./use-auth";
+import { useAuth } from "./useAuth";
 import { useAllMachines } from "./use-all-machines";
 import { parseMaintenanceMachineString } from "@/utils/parts";
 import { useQuery } from "@tanstack/react-query";
@@ -89,7 +89,7 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[], cu
 };
 
 export function useUserParts() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { allMachines, loading: machinesLoading } = useAllMachines();
   const { customImages, loading: imagesLoading } = useCustomPartImages(); // Use the new hook
 

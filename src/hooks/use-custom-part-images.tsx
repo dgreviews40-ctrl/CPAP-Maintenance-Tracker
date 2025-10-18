@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./use-auth";
+import { useAuth } from "./useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { showError, showSuccess } from "@/utils/toast";
 
@@ -31,7 +31,7 @@ const fetchCustomImages = async (userId: string | undefined): Promise<Record<str
 };
 
 export function useCustomPartImages() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: customImages = {}, isLoading } = useQuery<Record<string, string>>({

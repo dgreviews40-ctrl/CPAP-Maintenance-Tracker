@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./use-auth";
+import { useAuth } from "./useAuth";
 import { cpapMachines } from "@/data/cpap-machines";
 import { useQuery, QueryObserverResult, RefetchOptions } from "@tanstack/react-query";
 
@@ -91,7 +91,7 @@ const fetchAllMachines = async (userId: string | undefined): Promise<Machine[]> 
 };
 
 export function useAllMachines() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   const { data: allMachines = cpapMachines, isLoading, refetch } = useQuery<Machine[]>({
     queryKey: ['allMachines', user?.id],

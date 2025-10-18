@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./use-auth";
+import { useAuth } from "./useAuth";
 import { useUserParts, PartData } from "./use-user-parts";
 import { parseMaintenanceMachineString } from "@/utils/parts";
 import { useQuery } from "@tanstack/react-query";
@@ -56,7 +56,7 @@ const fetchMaintenanceHistory = async (userId: string | undefined, userParts: Pa
 };
 
 export function useMaintenanceHistory() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { userParts, loading: partsLoading } = useUserParts();
 
   const { data: history = {}, isLoading, refetch } = useQuery<PartHistoryMap>({
