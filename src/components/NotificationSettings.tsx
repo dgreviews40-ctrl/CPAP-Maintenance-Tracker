@@ -134,7 +134,8 @@ const NotificationSettings = () => {
     )
   );
 
-  const partsWithCustomFrequency = new Set(customFrequencies.map(f => f.unique_part_key));
+  // Ensure customFrequencies is an array before mapping
+  const partsWithCustomFrequency = new Set((customFrequencies || []).map(f => f.unique_part_key));
   const partsForSelection = availableParts.filter(p => !partsWithCustomFrequency.has(p.key));
 
   return (
@@ -221,7 +222,8 @@ const NotificationSettings = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customFrequencies.map((item) => {
+                {/* Safely map over customFrequencies */}
+                {(customFrequencies || []).map((item) => {
                   const { machineLabel, partTypeLabel, partModelLabel } = getPartDetails(item.unique_part_key);
                   return (
                     <TableRow key={item.id}>
