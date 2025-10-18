@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import FrequencyManagement from "@/components/FrequencyManagement";
 import PartReplacementHistory from "@/components/PartReplacementHistory";
 import NotificationCenter from "@/components/NotificationCenter";
+import DataManagement from "@/components/DataManagement"; // Import new component
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,12 @@ const Reports = () => {
                 <FrequencyManagement />
                 <NotificationCenter />
               </div>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Data Management</h2>
+              <Separator className="mb-4" />
+              <DataManagement />
             </section>
           </main>
         </div>
