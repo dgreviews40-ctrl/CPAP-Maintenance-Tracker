@@ -34,15 +34,23 @@ interface MaintenanceListProps {
   loading: boolean;
 }
 
-// Helper function to determine the status of an entry (copied for local use/display)
+// Helper function to determine the status of an entry
 const getStatus = (
   dateStr: string,
 ): { label: string; color: string } => {
+  if (!dateStr) {
+    return { label: "Unknown", color: "bg-gray-500" };
+  }
+  
   const today = startOfDay(new Date());
   // Handle timezone issues by replacing hyphens with slashes
   const nextMaintenanceDate = startOfDay(
     new Date(dateStr.replace(/-/g, "/")),
   );
+  
+  if (isNaN(nextMaintenanceDate.getTime())) {
+    return { label: "Invalid Date", color: "bg-gray-500" };
+  }
 
   if (isBefore(nextMaintenanceDate, today)) {
     return { label: "Overdue", color: "bg-red-500" };
@@ -59,6 +67,14 @@ const getStatus = (
   }
 
   return { label: "On Schedule", color: "bg-green-500" };
+};
+
+// Helper function to safely format date strings
+const safeFormatDate = (dateStr: string): string => {
+  if (!dateStr) return "N/A";
+  const date = new Date(dateStr.replace(/-/g, "/"));
+  if (isNaN(date.getTime())) return "Invalid Date";
+  return date.toLocaleDateString();
 };
 
 
@@ -123,14 +139,10 @@ const MaintenanceList = ({
                   {entry.machine}
                 </TableCell>
                 <TableCell>
-                  {new Date(
-                    entry.last_maintenance.replace(/-/g, "/"),
-                  ).toLocaleDateString()}
+                  {safeFormatDate(entry.last_maintenance)}
                 </TableCell>
                 <TableCell>
-                  {new Date(
-                    entry.next_maintenance.replace(/-/g, "/"),
-                  ).toLocaleDateString()}
+                  {safeFormatDate(entry.next_maintenance)}
                 </TableCell>
                 <TableCell className="max-w-[100px] truncate text-sm text-muted-foreground">
                   {entry.notes}

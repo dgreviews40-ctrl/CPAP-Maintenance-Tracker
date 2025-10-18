@@ -50,10 +50,14 @@ const DashboardSummary = () => {
         let nextDueItem: Stats['nextDue'] = null;
 
         data.forEach((entry: { machine: string, next_maintenance: string }) => {
+          if (!entry.next_maintenance) return; // Skip if date is missing
+
           // Handle timezone issues by replacing hyphens with slashes
           const nextMaintenanceDate = startOfDay(
             new Date(entry.next_maintenance.replace(/-/g, "/")),
           );
+          
+          if (isNaN(nextMaintenanceDate.getTime())) return; // Skip if date is invalid
 
           if (isBefore(nextMaintenanceDate, today)) {
             overdueCount++;

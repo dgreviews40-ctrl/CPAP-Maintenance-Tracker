@@ -46,8 +46,12 @@ const MaintenanceForecastChart = () => {
     
     // 2. Populate buckets with maintenance tasks
     allEntries.forEach(entry => {
+      if (!entry.next_maintenance) return; // Skip if date is missing
+
       // Handle timezone issues by replacing hyphens with slashes
       const nextMaintenanceDate = parseISO(entry.next_maintenance.replace(/-/g, "/"));
+      
+      if (isNaN(nextMaintenanceDate.getTime())) return; // Skip if date is invalid
       
       if (isFuture(nextMaintenanceDate) && isWithinInterval(nextMaintenanceDate, { start: today, end: ninetyDaysFromNow })) {
         const monthLabel = format(startOfMonth(nextMaintenanceDate), 'MMM yyyy');
