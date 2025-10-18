@@ -328,7 +328,12 @@ const PartInventory = () => {
                         />
                       </TableCell>
                       <TableCell>
-                        {item.last_restock ? new Date(item.last_restock.replace(/-/g, "/")).toLocaleDateString() : "N/A"}
+                        {item.last_restock 
+                          ? (() => {
+                              const date = new Date(item.last_restock.replace(/-/g, "/"));
+                              return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleDateString();
+                            })()
+                          : "N/A"}
                       </TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button

@@ -111,6 +111,12 @@ const MaintenanceForm = ({ onAddEntry }: MaintenanceFormProps) => {
     if (lastMaintenance && effectiveFrequencyDays !== null && effectiveFrequencyDays > 0) {
       // Use Date object from the input string (handle potential timezone issues by replacing hyphens)
       const lastDate = new Date(lastMaintenance.replace(/-/g, "/"));
+      
+      if (isNaN(lastDate.getTime())) {
+        setValue("next_maintenance", "", { shouldValidate: true });
+        return;
+      }
+
       const nextDate = addDays(lastDate, effectiveFrequencyDays);
       setValue("next_maintenance", format(nextDate, 'yyyy-MM-dd'), { shouldValidate: true });
     } else if (lastMaintenance) {
