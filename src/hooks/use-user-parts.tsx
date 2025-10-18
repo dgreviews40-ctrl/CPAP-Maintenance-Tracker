@@ -3,13 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./use-auth";
-import { useAllMachines } from "./use-all-machines"; // Import the correct hook
-
-interface UniquePartKey {
-  machineLabel: string;
-  partTypeLabel: string;
-  modelLabel: string;
-}
+import { useAllMachines } from "./use-all-machines";
+import { parseMaintenanceMachineString } from "@/utils/parts"; // Import utility
 
 export interface PartData {
   machineLabel: string;
@@ -21,18 +16,9 @@ export interface PartData {
   reorderThreshold?: number;
 }
 
-const parseMaintenanceMachineString = (machineString: string): UniquePartKey => {
-  const parts = machineString.split(' - ');
-  const machine = parts[0]?.trim() || machineString;
-  const partType = parts[1]?.trim() || "";
-  const partModelWithSku = parts[2]?.trim() || "";
-  const partModel = partModelWithSku.replace(/\s*\(SKU:.*\)/, '').trim();
-  return { machineLabel: machine, partTypeLabel: partType, modelLabel: partModel };
-};
-
 export function useUserParts() {
   const { user, loading: authLoading } = useAuth();
-  const { allMachines, loading: machinesLoading } = useAllMachines(); // Use the hook for all machines
+  const { allMachines, loading: machinesLoading } = useAllMachines();
   const [userParts, setUserParts] = useState<PartData[]>([]);
   const [loading, setLoading] = useState(true);
 
