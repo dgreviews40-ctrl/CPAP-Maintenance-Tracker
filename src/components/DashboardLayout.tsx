@@ -2,9 +2,9 @@
 
 import { PropsWithChildren, ReactNode } from "react";
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
+  PanelGroup as ResizablePanelGroup,
+  Panel as ResizablePanel,
+  PanelResizeHandle as ResizableHandle,
 } from "react-resizable-panels";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -39,7 +39,9 @@ const DashboardLayout = ({ children, sidebar }: DashboardLayoutProps) => {
           {children}
         </ScrollArea>
       </ResizablePanel>
-      <ResizableHandle withHandle />
+      <ResizableHandle className="w-2 bg-border hover:bg-primary/50 transition-colors flex items-center justify-center">
+        <div className="h-8 w-1 bg-muted-foreground/50 rounded-full" />
+      </ResizableHandle>
       <ResizablePanel defaultSize={30} minSize={25} maxSize={40}>
         <ScrollArea className="h-full p-6 bg-muted/20">
           <div className="space-y-6">
