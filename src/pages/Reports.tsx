@@ -21,9 +21,7 @@ const Reports = () => {
             </Link>
             <header className="text-center flex-grow">
               <h1 className="text-4xl font-bold">Advanced Settings</h1>
-              <p className="text-xl text-muted-foreground">
-                Analyze usage, manage frequencies, and configure notifications.
-              </p>
+              {/* Removed subtitle paragraph */}
             </header>
             <div className="w-[150px]">
               {/* Spacer to balance the header */}
