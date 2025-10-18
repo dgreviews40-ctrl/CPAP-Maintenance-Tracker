@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -13,9 +12,10 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, TrendingUp } from "lucide-react"; // Fixed typo: lucie-react -> lucide-react
+import { Loader2, TrendingUp } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
 import { useCustomFrequencies } from "@/hooks/use-custom-frequencies";
+import { useMaintenanceHistory } from "@/hooks/use-maintenance-history";
 import { getMaintenanceFrequencyDays } from "@/utils/frequency";
 import { parseMaintenanceMachineString } from "@/utils/parts";
 
@@ -25,85 +25,64 @@ interface UsageData {
   recommended_days: number;
 }
 
-const PartUsageRateChart = () => { // Removed { dataRefreshKey }: { dataRefreshKey: number }
+const PartUsageRateChart = () => {
   const { frequencies, loading: loadingFrequencies } = useCustomFrequencies();
-  const [chartData, setChartData] = useState<UsageData[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true); // Renamed 'loading' to 'isLoadingData'
+  const { history, loading: loadingHistory } = useMaintenanceHistory();
 
-  useEffect(() => {
-    if (loadingFrequencies) return;
+  const chartData = useMemo<UsageData[]>(() => {
+    if (loadingHistory || loadingFrequencies) return [];
 
-    const fetchAndProcessData = async () => {
-      setIsLoadingData(true);
+    const groupedEntries: Record<string, { dates: Date[], recommended: number }> = {};
+    const allEntries = Object.values(history).flat();
+
+    allEntries.forEach((entry) => {
+      const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
+      if (!machineLabel || !partTypeLabel || !modelLabel || !entry.last_maintenance) return;
+
+      const partKey = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
+      const maintenanceDate = parseISO(entry.last_maintenance.replace(/-/g, "/"));
       
-      const { data, error } = await supabase
-        .from("maintenance_entries")
-        .select("machine, last_maintenance")
-        .order("last_maintenance", { ascending: true });
+      if (isNaN(maintenanceDate.getTime())) return;
 
-      if (error) {
-        console.error("Error fetching maintenance entries for usage chart:", error);
-        setIsLoadingData(false);
-        return;
+      // Determine the recommended frequency: Custom > Default > 30 days (fallback)
+      const defaultDays = getMaintenanceFrequencyDays(partTypeLabel) || 30;
+      const recommendedDays = frequencies[partKey] || defaultDays;
+
+      if (!groupedEntries[partKey]) {
+        groupedEntries[partKey] = { dates: [], recommended: recommendedDays };
       }
+      groupedEntries[partKey].dates.push(maintenanceDate);
+    });
 
-      if (data && data.length > 1) {
-        const groupedEntries: Record<string, { dates: Date[], recommended: number }> = {};
+    const processedData: UsageData[] = [];
 
-        data.forEach((entry) => {
-          const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
-          if (!machineLabel || !partTypeLabel || !modelLabel) return;
+    Object.entries(groupedEntries).forEach(([key, { dates, recommended }]) => {
+      // Ensure dates are sorted chronologically (oldest first)
+      dates.sort((a, b) => a.getTime() - b.getTime());
 
-          const partKey = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
-          if (!entry.last_maintenance) return;
-          
-          const maintenanceDate = parseISO(entry.last_maintenance);
-          if (isNaN(maintenanceDate.getTime())) return;
-
-          // Determine the recommended frequency: Custom > Default > 30 days (fallback)
-          const defaultDays = getMaintenanceFrequencyDays(partTypeLabel) || 30;
-          const recommendedDays = frequencies[partKey] || defaultDays;
-
-          if (!groupedEntries[partKey]) {
-            groupedEntries[partKey] = { dates: [], recommended: recommendedDays };
-          }
-          groupedEntries[partKey].dates.push(maintenanceDate);
-        });
-
-        const processedData: UsageData[] = [];
-
-        Object.entries(groupedEntries).forEach(([key, { dates, recommended }]) => {
-          // Ensure dates are sorted
-          dates.sort((a, b) => a.getTime() - b.getTime());
-
-          if (dates.length > 1) {
-            let totalIntervalDays = 0;
-            // Calculate the interval between consecutive replacements
-            for (let i = 1; i < dates.length; i++) {
-              totalIntervalDays += differenceInDays(dates[i], dates[i - 1]);
-            }
-            
-            const averageInterval = Math.round(totalIntervalDays / (dates.length - 1));
-            
-            const [machineLabel, partTypeLabel, partModelLabel] = key.split('|');
-            
-            processedData.push({
-              part: `${partModelLabel} (${machineLabel})`,
-              actual_days: averageInterval,
-              recommended_days: recommended,
-            });
-          }
-        });
+      if (dates.length > 1) {
+        let totalIntervalDays = 0;
+        // Calculate the interval between consecutive replacements
+        for (let i = 1; i < dates.length; i++) {
+          totalIntervalDays += differenceInDays(dates[i], dates[i - 1]);
+        }
         
-        setChartData(processedData);
+        const averageInterval = Math.round(totalIntervalDays / (dates.length - 1));
+        
+        const [machineLabel, partTypeLabel, partModelLabel] = key.split('|');
+        
+        processedData.push({
+          part: `${partModelLabel} (${machineLabel})`,
+          actual_days: averageInterval,
+          recommended_days: recommended,
+        });
       }
-      setIsLoadingData(false);
-    };
+    });
+    
+    return processedData;
+  }, [history, frequencies, loadingHistory, loadingFrequencies]);
 
-    fetchAndProcessData();
-  }, [loadingFrequencies, frequencies]); // Removed dataRefreshKey dependency
-
-  const loadingStatus = loadingFrequencies || isLoadingData; // Renamed 'loading' to 'loadingStatus'
+  const loadingStatus = loadingFrequencies || loadingHistory;
 
   if (chartData.length === 0 && !loadingStatus) {
     return (
@@ -117,6 +96,21 @@ const PartUsageRateChart = () => { // Removed { dataRefreshKey }: { dataRefreshK
           <div className="h-48 flex items-center justify-center text-muted-foreground">
             Need at least two maintenance entries for a part to calculate usage rate.
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (loadingStatus) {
+    return (
+      <Card className="w-full mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <TrendingUp className="h-5 w-5 mr-2" /> Part Usage Rate Comparison
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-48 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
