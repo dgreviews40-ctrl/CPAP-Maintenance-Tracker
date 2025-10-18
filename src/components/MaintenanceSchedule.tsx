@@ -1,48 +1,174 @@
 "use client";
 
-import DashboardSummary from "./DashboardSummary";
-import InventoryAlert from "./InventoryAlert";
-import UpcomingTasks from "./UpcomingTasks";
-import LowInventoryWidget from "./LowInventoryWidget";
-import MaintenanceForecastChart from "./MaintenanceForecastChart";
-import PartUsageRateChart from "./PartUsageRateChart";
-import PartReplacementHistory from "./PartReplacementHistory";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, CheckCircle, Clock, Wrench, Package, Settings2, Settings as SettingsIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { format, isPast, isToday, parseISO } from 'date-fns';
+import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import MachineHealthScore from "./MachineHealthScore"; // Import the new component
-import PartTypeBreakdownChart from "./PartTypeBreakdownChart";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Define types for maintenance entry
+interface MaintenanceEntry {
+  id: string;
+  machine: string;
+  last_maintenance: string;
+  next_maintenance: string;
+  notes: string | null;
+  user_id: string;
+  created_at: string;
+}
+
+// Fetch maintenance entries
+const fetchMaintenanceEntries = async (): Promise<MaintenanceEntry[]> => {
+  const { data, error } = await supabase
+    .from('maintenance_entries')
+    .select('*')
+    .order('next_maintenance', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data;
+};
 
 const MaintenanceSchedule = () => {
-  return (
-    <div id="tracker" className="space-y-8">
-      <DashboardSummary />
-      
-      <InventoryAlert />
+  const { data: entries, isLoading, error } = useQuery<MaintenanceEntry[]>({
+    queryKey: ['maintenanceEntries'],
+    queryFn: fetchMaintenanceEntries,
+  });
 
-      {/* Widgets Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <UpcomingTasks />
+  const [upcomingTasks, setUpcomingTasks] = useState<MaintenanceEntry[]>([]);
+  const [overdueTasks, setOverdueTasks] = useState<MaintenanceEntry[]>([]);
+
+  useEffect(() => {
+    if (entries) {
+      const now = new Date();
+      const upcoming = entries.filter(entry => {
+        const nextDate = parseISO(entry.next_maintenance);
+        return !isPast(nextDate) || isToday(nextDate);
+      });
+      const overdue = entries.filter(entry => {
+        const nextDate = parseISO(entry.next_maintenance);
+        return isPast(nextDate) && !isToday(nextDate);
+      });
+
+      setUpcomingTasks(upcoming);
+      setOverdueTasks(overdue);
+    }
+  }, [entries]);
+
+  const renderTaskItem = (task: MaintenanceEntry, isOverdue: boolean) => (
+    <div key={task.id} className="flex justify-between items-center py-3 border-b last:border-b-0">
+      <div className="flex items-center">
+        {isOverdue ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <AlertTriangle className="h-5 w-5 mr-3 text-red-500 flex-shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Overdue since {format(parseISO(task.next_maintenance), 'MMM dd, yyyy')}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <Clock className="h-5 w-5 mr-3 text-blue-500 flex-shrink-0" />
+        )}
+        <div>
+          <p className="font-medium truncate">{task.machine} Maintenance</p>
+          <p className="text-sm text-muted-foreground">
+            Next: {format(parseISO(task.next_maintenance), 'MMM dd, yyyy')}
+          </p>
         </div>
-        <LowInventoryWidget />
       </div>
+      <Link to={`/maintenance-log?machine=${encodeURIComponent(task.machine)}`}>
+        <Button variant="outline" size="sm">View</Button>
+      </Link>
+    </div>
+  );
 
-      <Separator />
+  if (isLoading) {
+    return (
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+        <Skeleton className="h-[300px] col-span-2" />
+        <Skeleton className="h-[300px]" />
+      </div>
+    );
+  }
 
-      <h2 className="text-2xl font-bold">Reports & Insights</h2>
-      
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MaintenanceForecastChart />
-        <PartUsageRateChart />
-      </div>
-      
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MachineHealthScore />
-        <PartTypeBreakdownChart />
-      </div>
-      
-      <PartReplacementHistory />
+  if (error) {
+    return <div className="text-red-500">Error loading maintenance schedule: {error.message}</div>;
+  }
+
+  return (
+    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+      {/* Upcoming & Overdue Tasks (Expanded to 2/3 width) */}
+      <Card className="lg:col-span-2 h-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-2xl font-bold flex items-center">
+            <Wrench className="h-6 w-6 mr-2 text-primary" /> Upcoming & Overdue Tasks
+          </CardTitle>
+          <Link to="/maintenance-log">
+            <Button variant="outline" size="sm">View Log</Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="pt-4">
+          {overdueTasks.length > 0 && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <h3 className="font-semibold text-red-700 flex items-center mb-2">
+                <AlertTriangle className="h-4 w-4 mr-2" /> {overdueTasks.length} Overdue Task{overdueTasks.length !== 1 ? 's' : ''}
+              </h3>
+              <div className="space-y-1">
+                {overdueTasks.map(task => renderTaskItem(task, true))}
+              </div>
+            </div>
+          )}
+
+          {upcomingTasks.length > 0 ? (
+            <div className="space-y-1">
+              <h3 className="font-semibold text-gray-700 flex items-center mb-2">
+                <Clock className="h-4 w-4 mr-2" /> Upcoming Tasks ({upcomingTasks.length})
+              </h3>
+              {upcomingTasks.map(task => renderTaskItem(task, false))}
+            </div>
+          ) : (
+            <div className="text-center p-8 border rounded-lg bg-gray-50">
+              <CheckCircle className="h-8 w-8 mx-auto text-green-500 mb-3" />
+              <p className="text-lg font-medium">All clear!</p>
+              <p className="text-sm text-muted-foreground">No upcoming maintenance tasks scheduled.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Placeholder for the space where LowInventoryWidget was (1/3 width) */}
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle className="text-lg">Quick Links</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Link to="/inventory">
+              <Button variant="outline" className="w-full justify-start">
+                <Package className="h-4 w-4 mr-2" /> Manage Inventory
+              </Button>
+            </Link>
+            <Link to="/machine-management">
+              <Button variant="outline" className="w-full justify-start">
+                <Settings2 className="h-4 w-4 mr-2" /> Configure Machines
+              </Button>
+            </Link>
+            <Link to="/settings">
+              <Button variant="outline" className="w-full justify-start">
+                <SettingsIcon className="h-4 w-4 mr-2" /> App Settings
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
