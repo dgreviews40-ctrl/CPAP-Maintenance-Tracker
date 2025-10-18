@@ -10,16 +10,19 @@ import { getMaintenanceFrequencyDays } from "@/utils/frequency";
 import { format, parseISO } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AspectRatio } from "@/components/ui/aspect-ratio"; // Import AspectRatio
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import PartImageUploader from "./PartImageUploader"; // Import the new component
+import { useRQClient } from "@/hooks/use-query-client"; // Import RQ Client for manual refetch
 
 interface PartDetailViewProps {
   uniqueKey: string;
 }
 
 const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
-  const { userParts, loading: loadingParts } = useUserParts();
+  const { userParts, loading: loadingParts, refetchUserParts } = useUserParts();
   const { frequencies, loading: loadingFrequencies } = useCustomFrequencies();
   const { history, loading: loadingHistory } = useMaintenanceHistory();
+  const queryClient = useRQClient();
 
   const loading = loadingParts || loadingFrequencies || loadingHistory;
 
@@ -29,6 +32,13 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
   const defaultFrequency = partDetails ? getMaintenanceFrequencyDays(partDetails.partTypeLabel) : null;
   const customFrequency = frequencies[uniqueKey] || null;
   const effectiveFrequency = customFrequency || defaultFrequency;
+  
+  // Handler to refresh data after image upload/update
+  const handleImageUpdated = () => {
+    // Invalidate the query that fetches custom images and user parts
+    queryClient.invalidateQueries({ queryKey: ['customPartImages'] });
+    queryClient.invalidateQueries({ queryKey: ['userParts'] });
+  };
 
   if (loading) {
     return (
@@ -62,27 +72,36 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* Part Image */}
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-lg">Part Visual</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AspectRatio ratio={1 / 1} className="bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-              {partDetails.imageUrl ? (
-                <img 
-                  src={partDetails.imageUrl} 
-                  alt={`${partDetails.modelLabel} image`} 
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                <div className="text-muted-foreground flex flex-col items-center">
-                  <ImageIcon className="h-8 w-8 mb-2" />
-                  <p>No Image Available</p>
-                </div>
-              )}
-            </AspectRatio>
-          </CardContent>
-        </Card>
+        <div className="md:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Part Visual</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AspectRatio ratio={1 / 1} className="bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                {partDetails.imageUrl ? (
+                  <img 
+                    src={partDetails.imageUrl} 
+                    alt={`${partDetails.modelLabel} image`} 
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <div className="text-muted-foreground flex flex-col items-center">
+                    <ImageIcon className="h-8 w-8 mb-2" />
+                    <p>No Image Available</p>
+                  </div>
+                )}
+              </AspectRatio>
+            </CardContent>
+          </Card>
+          
+          {/* Image Uploader */}
+          <PartImageUploader 
+            uniqueKey={uniqueKey} 
+            currentImageUrl={partDetails.imageUrl}
+            onImageUpdated={handleImageUpdated}
+          />
+        </div>
         
         {/* Summary Stats */}
         <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">

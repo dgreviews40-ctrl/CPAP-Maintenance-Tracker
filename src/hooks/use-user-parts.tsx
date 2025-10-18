@@ -6,6 +6,7 @@ import { useAuth } from "./use-auth";
 import { useAllMachines } from "./use-all-machines";
 import { parseMaintenanceMachineString } from "@/utils/parts";
 import { useQuery } from "@tanstack/react-query";
+import { useCustomPartImages } from "./use-custom-part-images"; // Import the new hook
 
 export interface PartData {
   machineLabel: string;
@@ -18,7 +19,7 @@ export interface PartData {
   imageUrl?: string; // Added imageUrl
 }
 
-const fetchUserParts = async (userId: string | undefined, allMachines: any[]): Promise<PartData[]> => {
+const fetchUserParts = async (userId: string | undefined, allMachines: any[], customImages: Record<string, string>): Promise<PartData[]> => {
   if (!userId) return [];
 
   const uniqueKeys = new Set<string>();
@@ -65,6 +66,7 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[]): P
     const modelData = partTypeData?.models.find(m => m.label === modelLabel);
     
     const inventoryStatus = inventoryMap.get(key);
+    const customImageUrl = customImages[key]; // Check for custom image
 
     if (modelData) {
       partsMap.set(key, {
@@ -73,7 +75,8 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[]): P
         modelLabel,
         reorderInfo: modelData.reorder_info,
         uniqueKey: key,
-        imageUrl: partTypeData?.image_url, // Retrieve image URL from partTypeData
+        // Use custom image URL if available, otherwise use the default/placeholder
+        imageUrl: customImageUrl || partTypeData?.image_url, 
         ...(inventoryStatus && { 
           quantity: inventoryStatus.quantity, 
           reorderThreshold: inventoryStatus.reorder_threshold 
@@ -88,11 +91,12 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[]): P
 export function useUserParts() {
   const { user, loading: authLoading } = useAuth();
   const { allMachines, loading: machinesLoading } = useAllMachines();
+  const { customImages, loading: imagesLoading } = useCustomPartImages(); // Use the new hook
 
   const { data: userParts = [], isLoading, refetch } = useQuery<PartData[]>({
-    queryKey: ['userParts', user?.id, allMachines],
-    queryFn: () => fetchUserParts(user?.id, allMachines),
-    enabled: !authLoading && !machinesLoading,
+    queryKey: ['userParts', user?.id, allMachines, customImages], // Add customImages to dependency array
+    queryFn: () => fetchUserParts(user?.id, allMachines, customImages),
+    enabled: !authLoading && !machinesLoading && !imagesLoading,
     staleTime: 1000 * 60 * 1, // 1 minute
   });
 
