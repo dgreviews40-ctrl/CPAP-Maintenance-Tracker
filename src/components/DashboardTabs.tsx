@@ -1,13 +1,11 @@
 "use client";
 
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wrench, Package, Settings, Home } from "lucide-react";
-
-// This component no longer manages state or navigation, it just renders the list of triggers.
+import { Wrench, Package, Settings, Home, Settings2 } from "lucide-react";
 
 const DashboardTabs = () => {
   return (
-    <TabsList className="grid w-full grid-cols-4 h-auto">
+    <TabsList className="grid w-full grid-cols-5 h-auto">
       <TabsTrigger value="overview" className="flex items-center">
         <Home className="h-4 w-4 mr-2 hidden sm:inline" /> Overview
       </TabsTrigger>
@@ -16,6 +14,9 @@ const DashboardTabs = () => {
       </TabsTrigger>
       <TabsTrigger value="inventory" className="flex items-center">
         <Package className="h-4 w-4 mr-2 hidden sm:inline" /> Inventory
+      </TabsTrigger>
+      <TabsTrigger value="machines" className="flex items-center">
+        <Settings2 className="h-4 w-4 mr-2 hidden sm:inline" /> Machines
       </TabsTrigger>
       <TabsTrigger value="settings" className="flex items-center">
         <Settings className="h-4 w-4 mr-2 hidden sm:inline" /> Settings

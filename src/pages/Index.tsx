@@ -11,7 +11,7 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon } from "lucide-react";
+import { Settings as SettingsIcon, Settings2, Wrench } from "lucide-react";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
@@ -60,6 +60,27 @@ const Index = () => {
               <Inventory />
             </TabsContent>
             
+            {/* Machines Tab: Links to the dedicated machine management page */}
+            <TabsContent value="machines">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Wrench className="h-5 w-5 mr-2" /> Machine & Part Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Define custom CPAP machines and parts not listed in the default catalog.
+                  </p>
+                  <Link to="/machine-management">
+                    <Button>
+                      <Settings2 className="h-4 w-4 mr-2" /> Go to Machine Management
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
             {/* Settings Tab: Links to the dedicated settings page */}
             <TabsContent value="settings">
               <Card>
@@ -68,7 +89,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4">
-                    Manage your profile, machines, and advanced configurations.
+                    Manage your profile, notifications, and advanced configurations.
                   </p>
                   <Link to="/settings">
                     <Button>
