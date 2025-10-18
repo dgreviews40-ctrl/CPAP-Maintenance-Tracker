@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { cpapMachines } from "@/data/cpap-machines";
 import { useQuery, QueryObserverResult, RefetchOptions } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 export interface PartModel {
   value: string;
@@ -94,7 +95,7 @@ export function useAllMachines() {
   const { user, isLoading: authLoading } = useAuth();
 
   const { data: allMachines = cpapMachines, isLoading, refetch } = useQuery<Machine[]>({
-    queryKey: ['allMachines', user?.id],
+    queryKey: queryKeys.machines.all(user?.id || 'anonymous'),
     queryFn: () => fetchAllMachines(user?.id),
     enabled: !authLoading,
     staleTime: 1000 * 60 * 5, // 5 minutes

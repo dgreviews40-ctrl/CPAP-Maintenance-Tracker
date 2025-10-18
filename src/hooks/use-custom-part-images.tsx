@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { showError, showSuccess } from "@/utils/toast";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface CustomImage {
   unique_part_key: string;
@@ -35,7 +36,7 @@ export function useCustomPartImages() {
   const queryClient = useQueryClient();
 
   const { data: customImages = {}, isLoading } = useQuery<Record<string, string>>({
-    queryKey: ['customPartImages', user?.id],
+    queryKey: queryKeys.parts.customImages(user?.id || 'anonymous'),
     queryFn: () => fetchCustomImages(user?.id),
     enabled: !authLoading,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -72,8 +73,8 @@ export function useCustomPartImages() {
       return { action: 'updated', uniqueKey, imageUrl };
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['customPartImages'] });
-      queryClient.invalidateQueries({ queryKey: ['userParts'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.parts.customImages(user?.id || 'anonymous') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.parts.userParts(user?.id || 'anonymous') });
       
       if (result.action === 'deleted') {
         showSuccess("Image reset to default.");

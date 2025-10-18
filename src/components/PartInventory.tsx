@@ -25,7 +25,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Link } from "react-router-dom"; // Import Link
+import { Link } from "react-router-dom";
+import { queryKeys } from "@/lib/queryKeys"; // Import queryKeys
 
 interface InventoryItem {
   id: string;
@@ -65,7 +66,7 @@ const PartInventory = () => {
   const { allMachines } = useAllMachines();
 
   const { data: inventory = [], isLoading: loading, refetch: refetchInventory } = useQuery<InventoryItem[]>({
-    queryKey: ['partInventory', user?.id],
+    queryKey: queryKeys.inventory.all(user?.id || 'anonymous'),
     queryFn: () => fetchInventory(user?.id),
     enabled: !!user,
     staleTime: 1000 * 10, // 10 seconds
@@ -93,9 +94,9 @@ const PartInventory = () => {
   const selectedModel = availableModels.find(m => m.label === partModel);
 
   const invalidateInventoryQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['partInventory'] });
-    queryClient.invalidateQueries({ queryKey: ['userParts'] }); // User parts depend on inventory
-  }, [queryClient]);
+    queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all(user?.id || 'anonymous') });
+    queryClient.invalidateQueries({ queryKey: queryKeys.parts.userParts(user?.id || 'anonymous') }); // User parts depend on inventory
+  }, [queryClient, user]);
 
   const addMutation = useMutation({
     mutationFn: async (newItem: Omit<InventoryItem, 'id' | 'last_restock'>) => {

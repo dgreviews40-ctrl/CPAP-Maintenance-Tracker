@@ -6,6 +6,7 @@ import { useAuth } from "./useAuth";
 import { useUserParts, PartData } from "./use-user-parts";
 import { parseMaintenanceMachineString } from "@/utils/parts";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 export type MaintenanceEntry = {
   id: string;
@@ -60,7 +61,7 @@ export function useMaintenanceHistory() {
   const { userParts, loading: partsLoading } = useUserParts();
 
   const { data: history = {}, isLoading, refetch } = useQuery<PartHistoryMap>({
-    queryKey: ['maintenanceHistory', user?.id, userParts],
+    queryKey: queryKeys.maintenance.history(user?.id || 'anonymous'),
     queryFn: () => fetchMaintenanceHistory(user?.id, userParts),
     enabled: !authLoading && !partsLoading,
     staleTime: 1000 * 10, // 10 seconds

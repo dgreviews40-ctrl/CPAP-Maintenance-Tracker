@@ -6,7 +6,8 @@ import { useAuth } from "./useAuth";
 import { useAllMachines } from "./use-all-machines";
 import { parseMaintenanceMachineString } from "@/utils/parts";
 import { useQuery } from "@tanstack/react-query";
-import { useCustomPartImages } from "./use-custom-part-images"; // Import the new hook
+import { useCustomPartImages } from "./use-custom-part-images";
+import { queryKeys } from "@/lib/queryKeys";
 
 export interface PartData {
   machineLabel: string;
@@ -91,10 +92,10 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[], cu
 export function useUserParts() {
   const { user, isLoading: authLoading } = useAuth();
   const { allMachines, loading: machinesLoading } = useAllMachines();
-  const { customImages, loading: imagesLoading } = useCustomPartImages(); // Use the new hook
+  const { customImages, loading: imagesLoading } = useCustomPartImages();
 
   const { data: userParts = [], isLoading, refetch } = useQuery<PartData[]>({
-    queryKey: ['userParts', user?.id, allMachines, customImages], // Add customImages to dependency array
+    queryKey: queryKeys.parts.userParts(user?.id || 'anonymous'),
     queryFn: () => fetchUserParts(user?.id, allMachines, customImages),
     enabled: !authLoading && !machinesLoading && !imagesLoading,
     staleTime: 1000 * 60 * 1, // 1 minute

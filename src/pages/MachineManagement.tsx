@@ -16,6 +16,7 @@ import { cpapMachines } from "@/data/cpap-machines";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom"; // Import Link
 import { isCustomPartReferenced } from "@/utils/data-integrity"; // Import the new utility
+import { queryKeys } from "@/lib/queryKeys"; // Import queryKeys
 
 interface CustomMachinePart {
   id: string;
@@ -46,7 +47,7 @@ const MachineManagement = () => {
   const { allMachines, refetchMachines } = useAllMachines();
   
   const { data: customParts = [], isLoading: loading } = useQuery<CustomMachinePart[]>({
-    queryKey: ['customMachineParts', user?.id],
+    queryKey: queryKeys.machines.customParts(user?.id || 'anonymous'),
     queryFn: () => fetchCustomParts(user?.id),
     enabled: !!user,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -61,9 +62,9 @@ const MachineManagement = () => {
   const [reorderInfo, setReorderInfo] = useState("");
 
   const invalidateMachineQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['customMachineParts'] });
-    queryClient.invalidateQueries({ queryKey: ['allMachines'] }); // Must refetch the combined list
-  }, [queryClient]);
+    queryClient.invalidateQueries({ queryKey: queryKeys.machines.customParts(user?.id || 'anonymous') });
+    queryClient.invalidateQueries({ queryKey: queryKeys.machines.all(user?.id || 'anonymous') }); // Must refetch the combined list
+  }, [queryClient, user]);
 
   const addMutation = useMutation({
     mutationFn: async (newItem: Omit<CustomMachinePart, 'id'>) => {

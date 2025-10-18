@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { showError, showSuccess } from "@/utils/toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 // Map: unique_part_key -> frequency_days
 type CustomFrequenciesMap = Record<string, number>;
@@ -33,7 +34,7 @@ export function useCustomFrequencies() {
   const queryClient = useQueryClient();
 
   const { data: frequencies = {}, isLoading } = useQuery<CustomFrequenciesMap>({
-    queryKey: ['customFrequencies', user?.id],
+    queryKey: queryKeys.frequencies.custom(user?.id || 'anonymous'),
     queryFn: () => fetchFrequencies(user?.id),
     enabled: !authLoading,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -70,8 +71,8 @@ export function useCustomFrequencies() {
       return { action: 'updated', uniqueKey, days };
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['customFrequencies'] });
-      queryClient.invalidateQueries({ queryKey: ['maintenanceHistory'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.frequencies.custom(user?.id || 'anonymous') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.maintenance.history(user?.id || 'anonymous') });
       
       if (result.action === 'deleted') {
         showSuccess("Frequency reset to default.");
