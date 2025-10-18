@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc, subDays, format } from "date-fns";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserParts } from "@/hooks/use-user-parts"; // Import useUserParts
 import { Loader2, Warehouse, History, Database } from "lucide-react";
 import EditMaintenanceDialog from "./EditMaintenanceDialog"; 
 import { Button } from "@/components/ui/button"; // Import Button
@@ -61,6 +62,7 @@ const getEntryStatus = (dateStr: string): MaintenanceFilter => {
 
 const MaintenanceTracker = () => {
   const { user, loading: authLoading } = useAuth();
+  const { refetchUserParts } = useUserParts(); // Get the refetch function
   const [entries, setEntries] = useState<MaintenanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSeeding, setIsSeeding] = useState(false);
@@ -225,6 +227,7 @@ const MaintenanceTracker = () => {
       
       // 4. Refresh the UI
       await fetchEntries();
+      await refetchUserParts(); // Crucial step: Refresh the list of unique parts for charts
 
     } catch (error) {
       console.error("Failed to seed data:", error);
@@ -255,6 +258,7 @@ const MaintenanceTracker = () => {
     
     showSuccess("Maintenance entry added successfully!");
     fetchEntries();
+    refetchUserParts(); // Refresh parts list when a new entry is added
     return true;
   };
 
@@ -277,6 +281,7 @@ const MaintenanceTracker = () => {
 
     showSuccess("Maintenance entry updated successfully!");
     fetchEntries();
+    refetchUserParts(); // Refresh parts list if part details were changed
     return true;
   };
   
@@ -302,6 +307,7 @@ const MaintenanceTracker = () => {
 
     showSuccess("Maintenance marked as complete! Next due date recalculated.");
     fetchEntries();
+    // No need to refetch user parts here, as the unique part keys haven't changed, only the dates.
     return true;
   };
 
@@ -322,6 +328,7 @@ const MaintenanceTracker = () => {
     } else {
       showSuccess("Entry deleted.");
       fetchEntries();
+      refetchUserParts(); // Refresh parts list in case the deleted entry was the last one for a part
     }
   };
 

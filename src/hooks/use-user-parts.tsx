@@ -119,5 +119,5 @@ export function useUserParts() {
   }, [authLoading, fetchUserParts]);
 
   // The overall loading state depends on auth, machines, and this hook's own fetching
-  return { userParts, loading: authLoading || machinesLoading || loading };
+  return { userParts, loading: authLoading || machinesLoading || loading, refetchUserParts: fetchUserParts };
 }
