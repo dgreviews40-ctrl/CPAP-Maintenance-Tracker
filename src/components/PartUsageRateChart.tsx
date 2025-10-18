@@ -55,7 +55,9 @@ const PartUsageRateChart = () => { // Removed { dataRefreshKey }: { dataRefreshK
           if (!machineLabel || !partTypeLabel || !modelLabel) return;
 
           const partKey = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
-          const maintenanceDate = parseISO(entry.last_maintenance.replace(/-/g, "/"));
+          if (!entry.last_maintenance) return;
+          
+          const maintenanceDate = parseISO(entry.last_maintenance);
           if (isNaN(maintenanceDate.getTime())) return;
 
           // Determine the recommended frequency: Custom > Default > 30 days (fallback)

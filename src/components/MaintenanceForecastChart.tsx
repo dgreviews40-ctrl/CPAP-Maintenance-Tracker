@@ -48,8 +48,7 @@ const MaintenanceForecastChart = () => {
     allEntries.forEach(entry => {
       if (!entry.next_maintenance) return; // Skip if date is missing
 
-      // Handle timezone issues by replacing hyphens with slashes
-      const nextMaintenanceDate = parseISO(entry.next_maintenance.replace(/-/g, "/"));
+      const nextMaintenanceDate = parseISO(entry.next_maintenance);
       
       if (isNaN(nextMaintenanceDate.getTime())) return; // Skip if date is invalid
       
@@ -66,7 +65,7 @@ const MaintenanceForecastChart = () => {
     const data: ForecastData[] = monthLabels
       .filter(label => forecastMap.has(label)) // Only include months we initialized
       .map(label => ({
-        name: format(parseISO(label.replace(' ', '-01 ')), 'MMM'), // Use short month name for XAxis
+        name: format(new Date(label), 'MMM'), // Use short month name for XAxis
         tasks: forecastMap.get(label)!,
       }));
 

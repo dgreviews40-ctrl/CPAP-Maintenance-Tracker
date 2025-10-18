@@ -50,12 +50,10 @@ const PartReplacementHistory = () => {
         if (!machineLabel || !partTypeLabel || !modelLabel) return;
 
         const key = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
-        const dateString = entry.last_maintenance?.replace(/-/g, "/");
         
-        // Ensure dateString is a non-empty string before parsing
-        if (!dateString) return;
+        if (!entry.last_maintenance) return;
 
-        const date = parseISO(dateString);
+        const date = parseISO(entry.last_maintenance);
         if (isNaN(date.getTime())) {
           console.warn("Skipping invalid date entry:", entry);
           return;
