@@ -8,8 +8,8 @@ import MaintenanceForecastChart from "./MaintenanceForecastChart";
 import PartUsageRateChart from "./PartUsageRateChart";
 import PartReplacementHistory from "./PartReplacementHistory";
 import { Separator } from "@/components/ui/separator";
-import MaintenanceActivityChart from "./MaintenanceActivityChart";
-import PartTypeBreakdownChart from "./PartTypeBreakdownChart"; // Import the new chart
+import MachineHealthScore from "./MachineHealthScore"; // Import the new component
+import PartTypeBreakdownChart from "./PartTypeBreakdownChart";
 
 const MaintenanceSchedule = () => {
   return (
@@ -38,7 +38,7 @@ const MaintenanceSchedule = () => {
       
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MaintenanceActivityChart />
+        <MachineHealthScore />
         <PartTypeBreakdownChart />
       </div>
       
