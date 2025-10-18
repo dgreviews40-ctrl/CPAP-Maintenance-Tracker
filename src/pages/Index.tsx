@@ -3,16 +3,14 @@
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import DashboardTabs from "@/components/DashboardTabs";
-import DashboardOverview from "@/components/DashboardOverview"; // Use DashboardOverview for Overview
+import MaintenanceSchedule from "@/components/MaintenanceSchedule"; // Use MaintenanceSchedule for Overview
 import MaintenanceLog from "@/components/MaintenanceLog"; // Use MaintenanceLog for Maintenance tab
 import Inventory from "@/components/Inventory"; // Use Inventory for Inventory tab
-import MachineConfiguration from "@/components/MachineConfiguration"; // Import MachineConfiguration
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Settings2, Wrench } from "lucide-react";
+import { Settings as SettingsIcon } from "lucide-react";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
@@ -46,9 +44,9 @@ const Index = () => {
           <DashboardTabs /> 
 
           <div className="mt-6">
-            {/* Overview Tab: Contains charts and summary widgets */}
+            {/* Overview Tab: Contains the schedule and low inventory widget */}
             <TabsContent value="overview">
-              <DashboardOverview />
+              <MaintenanceSchedule />
             </TabsContent>
             
             {/* Maintenance Tab: Contains the form and the list/tracker */}
@@ -61,12 +59,16 @@ const Index = () => {
               <Inventory />
             </TabsContent>
             
-            {/* Machines Tab: Displays the Machine Configuration details */}
-            <TabsContent value="machines">
-              <MachineConfiguration />
+            {/* Settings Tab: Contains a link to the main settings page */}
+            <TabsContent value="settings">
+              <div className="flex justify-center p-10">
+                <Link to="/settings">
+                  <Button size="lg">
+                    <SettingsIcon className="h-5 w-5 mr-2" /> Go to Settings Hub
+                  </Button>
+                </Link>
+              </div>
             </TabsContent>
-            
-            {/* Note: The 'settings' tab content is removed as per request */}
           </div>
         </Tabs>
       </div>
