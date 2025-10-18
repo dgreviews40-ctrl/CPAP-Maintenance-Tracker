@@ -18,8 +18,6 @@ const DashboardSidebar = () => (
     <UpcomingTasks />
     <LowInventoryWidget />
     <MaintenanceForecastChart />
-    <InventoryStatusChart />
-    <PartUsageRateChart />
     <NotificationCenter />
   </div>
 );
@@ -36,7 +34,7 @@ const Index = () => {
         </header>
         <main className="w-full max-w-6xl mx-auto">
           <DashboardLayout sidebar={<DashboardSidebar />}>
-            <h2 className="text-3xl font-bold mb-4">Maintenance Tracker</h2>
+            <h2 className="text-3xl font-bold mb-4" id="tracker">Maintenance Tracker</h2>
             <Separator className="mb-6" />
             <MaintenanceTracker />
           </DashboardLayout>
