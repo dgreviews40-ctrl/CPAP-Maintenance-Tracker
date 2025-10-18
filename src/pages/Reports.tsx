@@ -4,13 +4,12 @@ import Layout from "@/components/Layout";
 import FrequencyManagement from "@/components/FrequencyManagement";
 import PartReplacementHistory from "@/components/PartReplacementHistory";
 import NotificationCenter from "@/components/NotificationCenter";
-import DataManagement from "@/components/DataManagement"; // Import new component
+import DataManagement from "@/components/DataManagement";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import PartUsageRateChart from "@/components/PartUsageRateChart";
-import InventoryStatusChart from "@/components/InventoryStatusChart";
+// Removed imports for PartUsageRateChart and InventoryStatusChart
 
 const Reports = () => {
   return (
@@ -35,14 +34,7 @@ const Reports = () => {
           </div>
           <main className="space-y-8">
             
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Usage Analysis</h2>
-              <Separator className="mb-4" />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PartUsageRateChart />
-                <InventoryStatusChart />
-              </div>
-            </section>
+            {/* Removed Usage Analysis Section */}
             
             <section>
               <h2 className="text-2xl font-semibold mb-4">Replacement History</h2>
