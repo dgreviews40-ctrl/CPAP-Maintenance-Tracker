@@ -2,8 +2,10 @@
 
 import Layout from "@/components/Layout";
 import DataManagement from "@/components/DataManagement";
-import NotificationCenter from "@/components/NotificationCenter"; // Keep NotificationCenter
-import FrequencySettings from "@/components/FrequencySettings"; // Import FrequencySettings
+import NotificationCenter from "@/components/NotificationCenter";
+import FrequencySettings from "@/components/FrequencySettings";
+import PartUsageRateChart from "@/components/PartUsageRateChart"; // Import the usage chart
+import PartReplacementHistory from "@/components/PartReplacementHistory"; // Import the history component
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,13 +23,25 @@ const Reports = () => {
               </Button>
             </Link>
             <header className="text-center flex-grow">
-              <h1 className="text-4xl font-bold">Advanced Settings</h1>
+              <h1 className="text-4xl font-bold">Advanced Settings & Reports</h1>
             </header>
             <div className="w-[150px]">
               {/* Spacer to balance the header */}
             </div>
           </div>
           <main className="space-y-8">
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Usage & Compliance Reports</h2>
+              <Separator className="mb-4" />
+              <PartUsageRateChart />
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Recent Replacement History</h2>
+              <Separator className="mb-4" />
+              <PartReplacementHistory />
+            </section>
             
             <section>
               <h2 className="text-2xl font-semibold mb-4">Maintenance Frequencies</h2>
