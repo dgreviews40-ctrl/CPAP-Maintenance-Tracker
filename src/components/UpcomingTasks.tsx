@@ -84,10 +84,11 @@ const UpcomingTasks = () => {
               
               return (
                 <li key={task.id} className="flex items-center justify-between">
-                  <div className="flex-1 truncate pr-4">
+                  <div className="flex-1 truncate pr-4 min-w-0"> {/* Added min-w-0 for better truncation */}
                     <Link 
                       to={`/part/${encodeURIComponent(task.uniqueKey)}`}
-                      className="font-medium truncate hover:underline"
+                      className="font-medium truncate hover:underline block" // Added 'block'
+                      title={task.machine}
                     >
                       {task.machine}
                     </Link>

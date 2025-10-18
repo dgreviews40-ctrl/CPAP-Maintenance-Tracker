@@ -136,12 +136,12 @@ const DashboardSummary = () => {
             <>
               <Link 
                 to={`/part/${encodeURIComponent(stats.nextDue.uniqueKey)}`}
-                className="text-xl font-bold truncate hover:underline" 
+                className="text-xl font-bold truncate hover:underline block" // Added 'block' to ensure truncate works
                 title={stats.nextDue.machine}
               >
                 {nextDuePartName}
               </Link>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 truncate" title={nextDueMachineName}>
                 {nextDueMachineName} | {stats.nextDue.date} ({stats.nextDue.daysAway} days)
               </p>
             </>

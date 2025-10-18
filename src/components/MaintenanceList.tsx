@@ -65,7 +65,7 @@ const getStatus = (
       end: sevenDaysFromNow,
     })
   ) {
-    return { label: "Due Soon", color: "bg-yellow-500" }; // <-- Fixed: Added closing brace and semicolon
+    return { label: "Due Soon", color: "bg-yellow-500" };
   }
 
   return { label: "On Schedule", color: "bg-green-500" };
@@ -143,7 +143,8 @@ const MaintenanceList = ({
                 <TableCell className="font-medium max-w-xs truncate">
                   <Link 
                     to={`/part/${encodeURIComponent(uniqueKey)}`}
-                    className="hover:underline text-primary font-medium"
+                    className="hover:underline text-primary font-medium block truncate" // Added 'block'
+                    title={entry.machine}
                   >
                     {entry.machine}
                   </Link>
