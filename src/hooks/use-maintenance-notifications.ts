@@ -7,6 +7,7 @@ import { parseMaintenanceMachineString } from "@/utils/parts";
 
 const NOTIFICATION_CHECK_INTERVAL = 1000 * 60 * 60; // Check every hour
 const DUE_SOON_THRESHOLD_DAYS = 3; // Notify if due within 3 days
+const NOTIFICATION_TOGGLE_KEY = "cpap_maintenance_notifications_enabled";
 
 export function useMaintenanceNotifications() {
   const { history, loading: loadingHistory } = useMaintenanceHistory();
@@ -14,13 +15,26 @@ export function useMaintenanceNotifications() {
     if (!("Notification" in window)) return 'unsupported';
     return Notification.permission;
   });
+  
+  // State for user's preference (true by default if supported, or based on stored value)
+  const [isEnabled, setIsEnabled] = useState(() => {
+    if (!("Notification" in window)) return false;
+    const stored = localStorage.getItem(NOTIFICATION_TOGGLE_KEY);
+    return stored === null ? true : stored === 'true';
+  });
 
   const handlePermissionChange = (status: NotificationPermission) => {
     setPermissionStatus(status);
   };
+  
+  const toggleEnabled = (checked: boolean) => {
+    setIsEnabled(checked);
+    localStorage.setItem(NOTIFICATION_TOGGLE_KEY, String(checked));
+  };
 
   useEffect(() => {
-    if (loadingHistory || permissionStatus !== 'granted') return;
+    // Only proceed if history is loaded, permission is granted, AND the user has enabled the toggle
+    if (loadingHistory || permissionStatus !== 'granted' || !isEnabled) return;
 
     const checkAndNotify = () => {
       const allEntries = Object.values(history).flat();
@@ -54,9 +68,6 @@ export function useMaintenanceNotifications() {
           // Use a unique tag to prevent duplicate notifications for the same entry
           const tag = `maintenance-${entry.id}`;
           
-          // Check if a notification with this tag was already shown recently (e.g., in the last hour)
-          // Note: We rely on the browser's notification API to handle display, but we can add a simple local storage check if needed for aggressive throttling.
-          
           new Notification(title, {
             body: body,
             icon: '/favicon.ico',
@@ -71,7 +82,7 @@ export function useMaintenanceNotifications() {
     const intervalId = setInterval(checkAndNotify, NOTIFICATION_CHECK_INTERVAL);
 
     return () => clearInterval(intervalId);
-  }, [history, loadingHistory, permissionStatus]);
+  }, [history, loadingHistory, permissionStatus, isEnabled]);
 
-  return { handlePermissionChange, permissionStatus };
+  return { handlePermissionChange, permissionStatus, isEnabled, toggleEnabled };
 }
