@@ -135,7 +135,7 @@ const PartInventory = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      showSuccess("Inventory updated!");
+      // Note: Success toast is handled by the caller (handleRestock or threshold update)
       invalidateInventoryQueries();
     },
     onError: (error) => {
@@ -180,16 +180,27 @@ const PartInventory = () => {
     } as Omit<InventoryItem, 'id' | 'last_restock'>);
   };
 
+  // This function is now only used for manual quantity adjustments (not restock)
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 0) return;
 
-    // Note: We no longer update last_restock here, only quantity
-    updateMutation.mutate({ id, updateData: { quantity: newQuantity } });
+    // We don't update last_restock here, as this is a manual quantity edit, not a formal restock event.
+    updateMutation.mutate({ id, updateData: { quantity: newQuantity } }, {
+      onSuccess: () => {
+        showSuccess("Quantity updated manually.");
+        invalidateInventoryQueries();
+      }
+    });
   };
   
   const handleUpdateThreshold = (id: string, newThreshold: number) => {
     if (newThreshold < 0) return;
-    updateMutation.mutate({ id, updateData: { reorder_threshold: newThreshold } });
+    updateMutation.mutate({ id, updateData: { reorder_threshold: newThreshold } }, {
+      onSuccess: () => {
+        showSuccess("Reorder threshold updated.");
+        invalidateInventoryQueries();
+      }
+    });
   };
 
   const handleDeletePart = (id: string) => {
@@ -357,7 +368,15 @@ const PartInventory = () => {
                         )}
                       </TableCell>
                       <TableCell className={cn("text-center font-bold", needsReorder && "text-red-500")}>
-                        {item.quantity}
+                        {/* Use Input for quantity to allow manual adjustment, but use handleUpdateQuantity */}
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => handleUpdateQuantity(item.id, Math.max(0, Number(e.target.value)))}
+                          onBlur={(e) => handleUpdateQuantity(item.id, Math.max(0, Number(e.target.value)))}
+                          min="0"
+                          className="w-16 text-center h-8 p-1 font-normal"
+                        />
                       </TableCell>
                       <TableCell className="text-center">
                         <Input
