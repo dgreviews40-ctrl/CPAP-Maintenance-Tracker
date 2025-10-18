@@ -294,14 +294,16 @@ const MaintenanceTracker = () => {
         <CardHeader>
           <CardTitle>Maintenance Tracker</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-8">
           <NotificationPermission onPermissionChange={setNotificationPermission} />
+          
+          {/* Row 1: Summary Cards */}
           <DashboardSummary />
           
-          {/* Two-Section Dashboard Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* Row 2: Charts (2 columns) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Section 1: Inventory Status Chart */}
+            {/* Inventory Status Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
@@ -313,11 +315,11 @@ const MaintenanceTracker = () => {
               </CardContent>
             </Card>
 
-            {/* Section 2: Part Replacement History */}
+            {/* Part Replacement History */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
-                  <History className="h-5 w-5 mr-2" /> Part Replacement History
+                  <History className="h-5 w-5 mr-2" /> Recent Replacements
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -326,33 +328,38 @@ const MaintenanceTracker = () => {
             </Card>
           </div>
           
-          {/* Maintenance Timeline (Full Width) */}
+          {/* Row 3: Timeline and Usage Rate (Full Width) */}
           <MaintenanceTimeline /> 
-          
-          {/* Part Usage Rate Chart (Full Width) */}
           <PartUsageRateChart />
 
-          <MaintenanceForm onAddEntry={addEntry} />
+          {/* Row 4: Add Entry Form */}
+          <div className="pt-4">
+            <h3 className="text-xl font-semibold mb-4">Add New Maintenance Entry</h3>
+            <MaintenanceForm onAddEntry={addEntry} />
+          </div>
           
-          <h3 className="text-xl font-semibold mb-4 mt-8">Maintenance Schedule</h3>
-          <MaintenanceControls 
-            filter={filter}
-            onFilterChange={setFilter}
-            machineFilter={machineFilter}
-            onMachineFilterChange={setMachineFilter}
-            sortKey={sortKey}
-            onSortKeyChange={setSortKey}
-            sortOrder={sortOrder}
-            onSortOrderChange={setSortOrder}
-          />
-          
-          <MaintenanceList 
-            entries={filteredAndSortedEntries} 
-            onDeleteEntry={deleteEntry} 
-            onEditEntry={handleEdit} 
-            onCompleteMaintenance={completeMaintenance}
-            loading={loading} 
-          />
+          {/* Row 5: Schedule List */}
+          <div className="pt-4">
+            <h3 className="text-xl font-semibold mb-4">Maintenance Schedule</h3>
+            <MaintenanceControls 
+              filter={filter}
+              onFilterChange={setFilter}
+              machineFilter={machineFilter}
+              onMachineFilterChange={setMachineFilter}
+              sortKey={sortKey}
+              onSortKeyChange={setSortKey}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+            />
+            
+            <MaintenanceList 
+              entries={filteredAndSortedEntries} 
+              onDeleteEntry={deleteEntry} 
+              onEditEntry={handleEdit} 
+              onCompleteMaintenance={completeMaintenance}
+              loading={loading} 
+            />
+          </div>
         </CardContent>
       </Card>
 

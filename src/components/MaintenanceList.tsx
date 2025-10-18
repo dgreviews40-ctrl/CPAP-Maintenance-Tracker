@@ -95,10 +95,18 @@ const MaintenanceList = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {entries.map((entry) => {
+          {entries.map((entry, index) => {
             const status = getStatus(entry.next_maintenance);
             return (
-              <TableRow key={entry.id}>
+              <TableRow 
+                key={entry.id}
+                className={cn(
+                  // Alternating row color for better readability
+                  index % 2 === 1 ? "bg-muted/10" : "",
+                  // Highlight overdue rows slightly more
+                  status.label === "Overdue" && "bg-red-900/10 hover:bg-red-900/20"
+                )}
+              >
                 <TableCell>
                   <Tooltip>
                     <TooltipTrigger>
