@@ -1,126 +1,96 @@
 "use client";
 
-import { useMemo } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, PieChart as PieChartIcon } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { useUserParts } from "@/hooks/use-user-parts";
+import { Loader2 } from "lucide-react";
 
+// Define the structure for the data
 interface PartTypeData {
   name: string;
   value: number;
 }
 
-const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884D8",
-  "#82CA9D",
-  "#FF6384",
-  "#36A2EB",
-];
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"];
+
+// Custom Tooltip Component to ensure readability
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="p-2 bg-white border border-gray-300 shadow-lg rounded-md text-gray-900">
+        <p className="font-semibold">{`${data.name}`}</p>
+        <p className="text-sm">{`Total Parts: ${data.value}`}</p>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 
 const PartTypeBreakdownChart = () => {
   const { userParts, loading } = useUserParts();
 
-  const chartData = useMemo<PartTypeData[]>(() => {
-    if (loading) return [];
-
-    const counts: Record<string, number> = {};
-    userParts.forEach((part) => {
-      const type = part.partTypeLabel;
-      counts[type] = (counts[type] || 0) + 1;
-    });
-
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [userParts, loading]);
-
   if (loading) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <PieChartIcon className="h-5 w-5 mr-2" /> Part Type Breakdown
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="h-64 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </CardContent>
+      <Card className="w-full h-96 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </Card>
     );
   }
 
+  // Aggregate data by part type
+  const partTypeCounts = userParts.reduce((acc, part) => {
+    // FIX: Use partTypeLabel instead of part_type_label
+    const type = part.partTypeLabel;
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Cast value to number to satisfy PartTypeData interface
+  const chartData: PartTypeData[] = Object.entries(partTypeCounts).map(([name, value]) => ({
+    name,
+    value: value as number,
+  }));
+
   if (chartData.length === 0) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <PieChartIcon className="h-5 w-5 mr-2" /> Part Type Breakdown
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="h-64 flex items-center justify-center text-muted-foreground">
-          No parts tracked yet.
-        </CardContent>
+      <Card className="w-full h-96 flex items-center justify-center">
+        <p className="text-muted-foreground">No parts defined yet.</p>
       </Card>
     );
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full h-96">
       <CardHeader>
-        <CardTitle className="flex items-center text-lg">
-          <PieChartIcon className="h-5 w-5 mr-2" /> Part Type Breakdown
-        </CardTitle>
+        <CardTitle>Part Type Breakdown</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
-              <Pie
-                data={chartData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%" // Centered
-                cy="50%"
-                outerRadius={80}
-                fill="#8884d8"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {chartData.map((_, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
-                  border: '1px solid hsl(var(--border))', 
-                  borderRadius: '0.5rem' 
-                }}
-                labelStyle={{ fontWeight: 'bold', color: 'hsl(var(--foreground))' }}
-                formatter={(value, name, props) => [`${value} parts`, props.payload.name]}
-              />
-              <Legend 
-                layout="horizontal" 
-                verticalAlign="top" 
-                align="center" 
-                wrapperStyle={{ paddingTop: '0px' }} // Remove previous padding
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+      <CardContent className="h-[calc(100%-70px)]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={80}
+              fill="#8884d8"
+              paddingAngle={5}
+              dataKey="value"
+            >
+              {chartData.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={COLORS[index % COLORS.length]}
+                />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+            <Legend layout="vertical" align="right" verticalAlign="middle" />
+          </PieChart>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );
