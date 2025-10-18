@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { useUserParts, PartData } from "./use-user-parts";
 import { parseMaintenanceMachineString } from "@/utils/parts";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
@@ -21,7 +19,7 @@ export type PartHistoryMap = {
   [uniqueKey: string]: MaintenanceEntry[];
 };
 
-const fetchMaintenanceHistory = async (userId: string | undefined, userParts: PartData[]): Promise<PartHistoryMap> => {
+const fetchMaintenanceHistory = async (userId: string | undefined): Promise<PartHistoryMap> => {
   if (!userId) return {};
 
   // Fetch all maintenance entries for the user
@@ -37,15 +35,12 @@ const fetchMaintenanceHistory = async (userId: string | undefined, userParts: Pa
 
   const historyMap: PartHistoryMap = {};
 
-  // Create a set of valid unique keys from userParts for efficient lookup
-  const validUniqueKeys = new Set(userParts.map(p => p.uniqueKey));
-
   (data as MaintenanceEntry[]).forEach((entry) => {
     const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
     const uniqueKey = `${machineLabel}|${partTypeLabel}|${modelLabel}`;
 
-    // Only process entries that correspond to a known unique part key
-    if (validUniqueKeys.has(uniqueKey)) {
+    // Group entries by unique key derived from the machine string
+    if (uniqueKey) {
       if (!historyMap[uniqueKey]) {
         historyMap[uniqueKey] = [];
       }
@@ -58,12 +53,11 @@ const fetchMaintenanceHistory = async (userId: string | undefined, userParts: Pa
 
 export function useMaintenanceHistory() {
   const { user, isLoading: authLoading } = useAuth();
-  const { userParts, loading: partsLoading } = useUserParts();
 
   const { data: history = {}, isLoading, refetch } = useQuery<PartHistoryMap>({
     queryKey: queryKeys.maintenance.history(user?.id || 'anonymous'),
-    queryFn: () => fetchMaintenanceHistory(user?.id, userParts),
-    enabled: !authLoading && !!user && !partsLoading, // Ensure user is present and parts are loaded
+    queryFn: () => fetchMaintenanceHistory(user?.id),
+    enabled: !authLoading && !!user, // Only wait for user authentication
     staleTime: 1000 * 10, // 10 seconds
   });
 
