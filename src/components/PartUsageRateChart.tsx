@@ -13,7 +13,7 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, TrendingUp } from "lucie-react";
+import { Loader2, TrendingUp } from "lucide-react"; // Fixed typo: lucie-react -> lucide-react
 import { differenceInDays, parseISO } from "date-fns";
 import { useCustomFrequencies } from "@/hooks/use-custom-frequencies";
 import { getMaintenanceFrequencyDays } from "@/utils/frequency";
@@ -28,13 +28,13 @@ interface UsageData {
 const PartUsageRateChart = ({ dataRefreshKey }: { dataRefreshKey: number }) => {
   const { frequencies, loading: loadingFrequencies } = useCustomFrequencies();
   const [chartData, setChartData] = useState<UsageData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true); // Renamed 'loading' to 'isLoadingData'
 
   useEffect(() => {
     if (loadingFrequencies) return;
 
     const fetchAndProcessData = async () => {
-      setLoading(true);
+      setIsLoadingData(true);
       
       const { data, error } = await supabase
         .from("maintenance_entries")
@@ -43,7 +43,7 @@ const PartUsageRateChart = ({ dataRefreshKey }: { dataRefreshKey: number }) => {
 
       if (error) {
         console.error("Error fetching maintenance entries for usage chart:", error);
-        setLoading(false);
+        setIsLoadingData(false);
         return;
       }
 
@@ -95,15 +95,15 @@ const PartUsageRateChart = ({ dataRefreshKey }: { dataRefreshKey: number }) => {
         
         setChartData(processedData);
       }
-      setLoading(false);
+      setIsLoadingData(false);
     };
 
     fetchAndProcessData();
   }, [loadingFrequencies, frequencies, dataRefreshKey]);
 
-  const loading = loadingFrequencies;
+  const loadingStatus = loadingFrequencies || isLoadingData; // Renamed 'loading' to 'loadingStatus'
 
-  if (chartData.length === 0 && !loading) {
+  if (chartData.length === 0 && !loadingStatus) {
     return (
       <Card className="w-full mt-6">
         <CardHeader>

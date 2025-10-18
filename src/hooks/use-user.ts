@@ -16,7 +16,12 @@ export const useUser = () => {
         setUser(user);
       } catch (error) {
         console.error("Error fetching user:", error);
-        toast.error("Failed to load user information");
+        // Fix: use the toast function from useToast, which expects an object
+        toast({
+          title: "Error",
+          description: "Failed to load user information",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
