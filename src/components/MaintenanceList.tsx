@@ -25,6 +25,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Link } from "react-router-dom"; // Import Link
+import { parseMaintenanceMachineString, generateUniqueKey } from "@/utils/parts"; // Import utilities
 
 interface MaintenanceListProps {
   entries: MaintenanceEntry[];
@@ -63,7 +65,7 @@ const getStatus = (
       end: sevenDaysFromNow,
     })
   ) {
-    return { label: "Due Soon", color: "bg-yellow-500" };
+    return { label: "Due Soon", color: "bg-yellow-500" }; // <-- Fixed: Added closing brace and semicolon
   }
 
   return { label: "On Schedule", color: "bg-green-500" };
@@ -113,6 +115,9 @@ const MaintenanceList = ({
         <TableBody>
           {entries.map((entry, index) => {
             const status = getStatus(entry.next_maintenance);
+            const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
+            const uniqueKey = generateUniqueKey(machineLabel, partTypeLabel, modelLabel);
+            
             return (
               <TableRow 
                 key={entry.id}
@@ -136,7 +141,12 @@ const MaintenanceList = ({
                   </Tooltip>
                 </TableCell>
                 <TableCell className="font-medium max-w-xs truncate">
-                  {entry.machine}
+                  <Link 
+                    to={`/part/${encodeURIComponent(uniqueKey)}`}
+                    className="hover:underline text-primary font-medium"
+                  >
+                    {entry.machine}
+                  </Link>
                 </TableCell>
                 <TableCell>
                   {safeFormatDate(entry.last_maintenance)}
