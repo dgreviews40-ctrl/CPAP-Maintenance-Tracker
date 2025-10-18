@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Settings from "./pages/Settings";
 import Inventory from "./pages/Inventory";
 import MachineManagement from "./pages/MachineManagement";
+import Reports from "./pages/Reports"; // Import the new Reports page
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/query-client"; // Import queryClient
 
@@ -25,6 +26,7 @@ function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/machine-management" element={<MachineManagement />} />
+              <Route path="/reports" element={<Reports />} /> {/* New Reports Route */}
             </Route>
           </Routes>
         </Router>

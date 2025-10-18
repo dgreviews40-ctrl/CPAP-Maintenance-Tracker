@@ -1,17 +1,28 @@
 "use client";
 
 import MaintenanceTracker from "@/components/MaintenanceTracker";
-import FrequencyManagement from "@/components/FrequencyManagement";
 import DashboardSummary from "@/components/DashboardSummary";
-import PartReplacementHistory from "@/components/PartReplacementHistory";
-import NotificationCenter from "@/components/NotificationCenter";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Layout from "@/components/Layout";
-import { Link } from "react-router-dom";
+import DashboardLayout from "@/components/DashboardLayout";
 import MaintenanceForecastChart from "@/components/MaintenanceForecastChart";
-import { BarChart, Home, Sliders, Wrench } from "lucide-react";
-import UpcomingTasks from "@/components/UpcomingTasks"; // Import new component
-import LowInventoryWidget from "@/components/LowInventoryWidget"; // Import new component
+import UpcomingTasks from "@/components/UpcomingTasks";
+import LowInventoryWidget from "@/components/LowInventoryWidget";
+import InventoryStatusChart from "@/components/InventoryStatusChart";
+import PartUsageRateChart from "@/components/PartUsageRateChart";
+import NotificationCenter from "@/components/NotificationCenter";
+import { Separator } from "@/components/ui/separator";
+
+const DashboardSidebar = () => (
+  <div className="space-y-6">
+    <DashboardSummary />
+    <UpcomingTasks />
+    <LowInventoryWidget />
+    <MaintenanceForecastChart />
+    <InventoryStatusChart />
+    <PartUsageRateChart />
+    <NotificationCenter />
+  </div>
+);
 
 const Index = () => {
   return (
@@ -24,59 +35,11 @@ const Index = () => {
           </p>
         </header>
         <main className="w-full max-w-6xl mx-auto">
-          <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="dashboard">
-                <Home className="h-4 w-4 mr-2" />
-                Dashboard
-              </TabsTrigger>
-              <TabsTrigger value="tracker">
-                <Wrench className="h-4 w-4 mr-2" />
-                Maintenance Tracker
-              </TabsTrigger>
-              <TabsTrigger value="reports">
-                <BarChart className="h-4 w-4 mr-2" />
-                Reports & Settings
-              </TabsTrigger>
-              <TabsTrigger value="inventory" asChild>
-                <Link to="/inventory">
-                  <Sliders className="h-4 w-4 mr-2" />
-                  Part Inventory
-                </Link>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="dashboard" className="mt-6">
-              <div className="space-y-6">
-                <DashboardSummary />
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    <UpcomingTasks />
-                  </div>
-                  <div className="space-y-6">
-                    <LowInventoryWidget />
-                    <MaintenanceForecastChart />
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="tracker" className="mt-6">
-              <MaintenanceTracker />
-            </TabsContent>
-
-            <TabsContent value="reports" className="mt-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                <div className="space-y-6">
-                  <FrequencyManagement />
-                  <NotificationCenter />
-                </div>
-                <div>
-                  <PartReplacementHistory />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+          <DashboardLayout sidebar={<DashboardSidebar />}>
+            <h2 className="text-3xl font-bold mb-4">Maintenance Tracker</h2>
+            <Separator className="mb-6" />
+            <MaintenanceTracker />
+          </DashboardLayout>
         </main>
       </div>
     </Layout>
