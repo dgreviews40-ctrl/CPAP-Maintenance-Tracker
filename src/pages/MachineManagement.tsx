@@ -15,6 +15,7 @@ import { useAllMachines } from "@/hooks/use-all-machines";
 import { cpapMachines } from "@/data/cpap-machines";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom"; // Import Link
+import { isCustomPartReferenced } from "@/utils/data-integrity"; // Import the new utility
 
 interface CustomMachinePart {
   id: string;
@@ -92,11 +93,23 @@ const MachineManagement = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (item: CustomMachinePart) => {
+      // 1. Check for references
+      const isReferenced = await isCustomPartReferenced(
+        item.machine_label,
+        item.part_type_label,
+        item.part_model_label
+      );
+      
+      if (isReferenced) {
+        throw new Error("Part is currently referenced in maintenance entries or inventory. Please delete or update those records first.");
+      }
+      
+      // 2. Proceed with deletion
       const { error } = await supabase
         .from("user_machines")
         .delete()
-        .eq("id", id);
+        .eq("id", item.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -105,7 +118,7 @@ const MachineManagement = () => {
     },
     onError: (error) => {
       console.error("Error deleting custom part:", error);
-      showError("Failed to delete custom part.");
+      showError(error.message || "Failed to delete custom part.");
     }
   });
 
@@ -126,9 +139,9 @@ const MachineManagement = () => {
     addMutation.mutate(newItem as Omit<CustomMachinePart, 'id'>);
   };
 
-  const handleDeletePart = (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this custom part definition? This will not affect existing maintenance entries.")) return;
-    deleteMutation.mutate(id);
+  const handleDeletePart = (item: CustomMachinePart) => {
+    if (!window.confirm(`Are you sure you want to delete the custom part definition: ${item.part_model_label} (${item.machine_label})?`)) return;
+    deleteMutation.mutate(item);
   };
   
   const totalMachines = allMachines.length;
@@ -264,7 +277,7 @@ const MachineManagement = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleDeletePart(item.id)}
+                                onClick={() => handleDeletePart(item)}
                                 title="Delete Custom Part"
                                 disabled={deleteMutation.isPending}
                               >
