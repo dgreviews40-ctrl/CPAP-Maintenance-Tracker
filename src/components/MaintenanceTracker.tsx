@@ -15,7 +15,8 @@ import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, Maintenance
 import InventoryStatusChart from "./InventoryStatusChart"; 
 import PartReplacementHistory from "./PartReplacementHistory";
 import MaintenanceTimeline from "./MaintenanceTimeline"; 
-import PartUsageRateChart from "./PartUsageRateChart"; // Import the new chart
+import PartUsageRateChart from "./PartUsageRateChart";
+import GettingStarted from "./GettingStarted"; // Import the new component
 import { supabase } from "@/integrations/supabase/client";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
@@ -297,40 +298,46 @@ const MaintenanceTracker = () => {
         <CardContent className="space-y-8">
           <NotificationPermission onPermissionChange={setNotificationPermission} />
           
-          {/* Row 1: Summary Cards */}
-          <DashboardSummary />
+          {/* Row 1: Summary Cards - key forces refetch on entry change */}
+          <DashboardSummary key={`summary-${entries.length}`} />
           
-          {/* Row 2: Charts (2 columns) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Inventory Status Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <Warehouse className="h-5 w-5 mr-2" /> Inventory Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <InventoryStatusChart />
-              </CardContent>
-            </Card>
+          {/* Show getting started guide for new users */}
+          {!loading && entries.length === 0 && <GettingStarted />}
 
-            {/* Part Replacement History */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <History className="h-5 w-5 mr-2" /> Recent Replacements
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <PartReplacementHistory />
-              </CardContent>
-            </Card>
+          {/* Keyed div forces all charts to re-render and refetch data when entries change */}
+          <div key={`charts-${entries.length}`}>
+            {/* Row 2: Charts (2 columns) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Inventory Status Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <Warehouse className="h-5 w-5 mr-2" /> Inventory Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <InventoryStatusChart />
+                </CardContent>
+              </Card>
+
+              {/* Part Replacement History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <History className="h-5 w-5 mr-2" /> Recent Replacements
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <PartReplacementHistory />
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Row 3: Timeline and Usage Rate (Full Width) */}
+            <MaintenanceTimeline /> 
+            <PartUsageRateChart />
           </div>
-          
-          {/* Row 3: Timeline and Usage Rate (Full Width) */}
-          <MaintenanceTimeline /> 
-          <PartUsageRateChart />
 
           {/* Row 4: Add Entry Form */}
           <div className="pt-4">
