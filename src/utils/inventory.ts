@@ -90,15 +90,14 @@ export function generateAmazonReorderUrl(reorderInfo: string): string {
   // Use the SKU as the search query
   const searchQuery = encodeURIComponent(reorderInfo);
   
-  // Replace 'YOUR_AFFILIATE_TAG' with the actual tag if you have it.
-  // For now, we use a generic search URL.
-  const affiliateTag = "YOUR_AFFILIATE_TAG"; // Placeholder for user's actual tag
+  // Use the provided affiliate tag
+  const affiliateTag = "dansgadgets06-20";
   
   // Standard Amazon search URL structure
   let url = `https://www.amazon.com/s?k=${searchQuery}`;
   
-  // If an affiliate tag is provided, append it
-  if (affiliateTag && affiliateTag !== "YOUR_AFFILIATE_TAG") {
+  // Append the affiliate tag
+  if (affiliateTag) {
     url += `&tag=${affiliateTag}`;
   }
   
