@@ -1,8 +1,10 @@
 "use client";
 
-import { Wind } from "lucide-react";
+import { Wind, Settings } from "lucide-react";
 import UserNav from "./UserNav";
-import { ThemeToggle } from "./ThemeToggle"; // Import ThemeToggle
+import { ThemeToggle } from "./ThemeToggle";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom"; // Import Link
 
 const Header = () => {
   return (
@@ -15,6 +17,11 @@ const Header = () => {
           </h1>
         </div>
         <div className="flex items-center space-x-2">
+          <Link to="/settings">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </Link>
           <ThemeToggle />
           <UserNav />
         </div>

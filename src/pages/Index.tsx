@@ -17,7 +17,7 @@ import InventoryAlert from "@/components/InventoryAlert";
 import UpcomingTasks from "@/components/UpcomingTasks";
 import PartTypeBreakdownChart from "@/components/PartTypeBreakdownChart";
 import MachineHealthScore from "@/components/MachineHealthScore";
-import MaintenanceTimelineChart from "@/components/MaintenanceTimelineChart"; // Replaced InventoryStatusChart
+import MaintenanceTimelineChart from "@/components/MaintenanceTimelineChart";
 
 
 const Index = () => {
@@ -36,7 +36,7 @@ const Index = () => {
 
   // Ensure default tab is set in URL on initial load
   useEffect(() => {
-    if (!searchParams.get('tab')) {
+    if (!searchParams.get('tab') || searchParams.get('tab') === 'settings') {
       const params = new URLSearchParams(searchParams.toString());
       params.set('tab', 'overview');
       navigate(`${location.pathname}?${params.toString()}`, { replace: true });
@@ -66,7 +66,7 @@ const Index = () => {
                 <PartTypeBreakdownChart />
               </div>
               
-              <MaintenanceTimelineChart /> {/* New Timeline Chart */}
+              <MaintenanceTimelineChart />
             </TabsContent>
             
             {/* Maintenance Tab: Contains the form and the list/tracker */}
@@ -77,17 +77,6 @@ const Index = () => {
             {/* Inventory Tab: Contains the full inventory management */}
             <TabsContent value="inventory">
               <Inventory />
-            </TabsContent>
-            
-            {/* Settings Tab: Contains a link to the main settings page */}
-            <TabsContent value="settings">
-              <div className="flex justify-center p-10">
-                <Link to="/settings">
-                  <Button size="lg">
-                    <SettingsIcon className="h-5 w-5 mr-2" /> Go to Settings Hub
-                  </Button>
-                </Link>
-              </div>
             </TabsContent>
           </div>
         </Tabs>
