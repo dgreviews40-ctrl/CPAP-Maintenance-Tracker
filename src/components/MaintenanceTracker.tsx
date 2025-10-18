@@ -148,10 +148,14 @@ const MaintenanceTracker = () => {
 
     // 2. Filter by Status
     filtered = filtered.filter(entry => {
+      if (!entry.next_maintenance) return false; // Skip entries without a next maintenance date
+
       // Handle timezone issues by replacing hyphens with slashes
       const nextMaintenanceDate = startOfDay(
         new Date(entry.next_maintenance.replace(/-/g, "/")),
       );
+      
+      if (isNaN(nextMaintenanceDate.getTime())) return false; // Skip invalid dates
 
       const isOverdue = isBefore(nextMaintenanceDate, today);
       const isDueSoon = isWithinInterval(nextMaintenanceDate, {
@@ -177,8 +181,9 @@ const MaintenanceTracker = () => {
       let comparison = 0;
       
       if (sortKey === "next_maintenance") {
-        const dateA = new Date(a.next_maintenance.replace(/-/g, "/")).getTime();
-        const dateB = new Date(b.next_maintenance.replace(/-/g, "/")).getTime();
+        // Ensure dates are valid before comparison
+        const dateA = a.next_maintenance ? new Date(a.next_maintenance.replace(/-/g, "/")).getTime() : 0;
+        const dateB = b.next_maintenance ? new Date(b.next_maintenance.replace(/-/g, "/")).getTime() : 0;
         comparison = dateA - dateB;
       } else if (sortKey === "machine") {
         comparison = a.machine.localeCompare(b.machine);

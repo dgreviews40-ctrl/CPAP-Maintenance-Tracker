@@ -28,10 +28,14 @@ export function useMaintenanceNotifications() {
       const dueSoonDate = addDays(today, DUE_SOON_THRESHOLD_DAYS);
       
       allEntries.forEach(entry => {
+        if (!entry.next_maintenance) return; // Skip if date is missing
+
         const nextMaintenanceDate = startOfDay(
           new Date(entry.next_maintenance.replace(/-/g, "/")),
         );
         
+        if (isNaN(nextMaintenanceDate.getTime())) return; // Skip if date is invalid
+
         const isOverdue = isBefore(nextMaintenanceDate, today);
         const daysAway = differenceInDays(nextMaintenanceDate, today);
         
