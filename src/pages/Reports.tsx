@@ -1,7 +1,6 @@
 "use client";
 
 import Layout from "@/components/Layout";
-import PartReplacementHistory from "@/components/PartReplacementHistory";
 import DataManagement from "@/components/DataManagement";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
@@ -29,12 +28,6 @@ const Reports = () => {
           </div>
           <main className="space-y-8">
             
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Replacement History</h2>
-              <Separator className="mb-4" />
-              <PartReplacementHistory />
-            </section>
-
             <section>
               <h2 className="text-2xl font-semibold mb-4">Data Management</h2>
               <Separator className="mb-4" />
