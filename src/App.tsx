@@ -8,24 +8,27 @@ import { AuthProvider } from "./hooks/use-auth";
 import { Toaster } from "@/components/ui/toaster";
 import Settings from "./pages/Settings";
 import Inventory from "./pages/Inventory";
-import MachineManagement from "./pages/MachineManagement"; // Import the new page
+import MachineManagement from "./pages/MachineManagement";
+import { DataRefreshProvider } from "./contexts/DataRefreshContext"; // Import Provider
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          {/* Use ProtectedRoute as a wrapper for routes that require authentication */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/machine-management" element={<MachineManagement />} />
-          </Route>
-        </Routes>
-      </Router>
-      <Toaster />
+      <DataRefreshProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            {/* Use ProtectedRoute as a wrapper for routes that require authentication */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/machine-management" element={<MachineManagement />} />
+            </Route>
+          </Routes>
+        </Router>
+        <Toaster />
+      </DataRefreshProvider>
     </AuthProvider>
   );
 }
