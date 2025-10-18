@@ -9,12 +9,13 @@ import { ProfileProvider } from "./hooks/useProfile";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import MachineManagement from "./pages/MachineManagement";
-import Analytics from "./pages/Analytics"; // Updated import
+import Analytics from "./pages/Analytics";
 import PartDetail from "./pages/PartDetail";
 import NotFound from "./pages/NotFound";
 import ToastProvider from "./components/ToastProvider";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/query-client";
+import MachineConfigurationPage from "./pages/MachineConfigurationPage"; // Import the new page
 
 function App() {
   return (
@@ -32,7 +33,8 @@ function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/machine-management" element={<MachineManagement />} />
-                <Route path="/analytics" element={<Analytics />} /> {/* Updated route path */}
+                <Route path="/machine-configurations" element={<MachineConfigurationPage />} /> {/* New Route */}
+                <Route path="/analytics" element={<Analytics />} />
                 <Route path="/part/:uniqueKey" element={<PartDetail />} />
               </Route>
               

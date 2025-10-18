@@ -3,11 +3,11 @@
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { User, Wrench, BarChart3, Bell, ArrowLeft } from "lucide-react";
+import { User, Wrench, BarChart3, Bell, ArrowLeft, Settings as SettingsIcon, List } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import NotificationCenter from "@/components/NotificationCenter";
 import FrequencyManagement from "@/components/FrequencyManagement";
-import { Button } from "@/components/ui/button"; // Import Button
+import { Button } from "@/components/ui/button";
 
 interface SettingLinkProps {
   to: string;
@@ -65,10 +65,17 @@ const Settings = () => {
                 />
                 <Separator />
                 <SettingLink
+                  to="/machine-configurations"
+                  icon={<List className="h-5 w-5" />}
+                  title="View All Machine Configurations"
+                  description="See a comprehensive list of all tracked machines and parts."
+                />
+                <Separator />
+                <SettingLink
                   to="/machine-management"
                   icon={<Wrench className="h-5 w-5" />}
-                  title="Machine & Part Management"
-                  description="Add custom CPAP machines and parts."
+                  title="Custom Part Management"
+                  description="Add, edit, or delete custom CPAP machine parts."
                 />
               </CardContent>
             </Card>
