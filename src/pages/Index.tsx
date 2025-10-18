@@ -16,7 +16,6 @@ import DashboardSummary from "@/components/DashboardSummary";
 import InventoryAlert from "@/components/InventoryAlert";
 import UpcomingTasks from "@/components/UpcomingTasks";
 import PartUsageRateChart from "@/components/PartUsageRateChart";
-import MaintenanceActivityChart from "@/components/MaintenanceActivityChart";
 import PartTypeBreakdownChart from "@/components/PartTypeBreakdownChart";
 import MachineHealthScore from "@/components/MachineHealthScore";
 
@@ -61,10 +60,10 @@ const Index = () => {
               {/* Upcoming Tasks now takes full width */}
               <UpcomingTasks />
               
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Adjusted grid to only contain the remaining two components */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <MachineHealthScore />
                 <PartTypeBreakdownChart />
-                <MaintenanceActivityChart />
               </div>
               
               <PartUsageRateChart />
