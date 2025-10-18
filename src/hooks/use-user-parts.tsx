@@ -18,6 +18,7 @@ export interface PartData {
   quantity?: number;
   reorderThreshold?: number;
   imageUrl?: string; // Added imageUrl
+  lastRestock?: string | null; // Added lastRestock
 }
 
 const fetchUserParts = async (userId: string | undefined, allMachines: any[], customImages: Record<string, string>): Promise<PartData[]> => {
@@ -25,7 +26,7 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[], cu
 
   const uniqueKeys = new Set<string>();
   const partsMap = new Map<string, PartData>();
-  const inventoryMap = new Map<string, { quantity: number, reorder_threshold: number }>();
+  const inventoryMap = new Map<string, { quantity: number, reorder_threshold: number, last_restock: string | null }>();
 
   // 1. Fetch from Maintenance Entries
   const { data: maintenanceData, error: maintenanceError } = await supabase
@@ -46,7 +47,7 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[], cu
   // 2. Fetch from Part Inventory
   const { data: inventoryData, error: inventoryError } = await supabase
     .from("part_inventory")
-    .select("machine_label, part_type_label, part_model_label, quantity, reorder_threshold");
+    .select("machine_label, part_type_label, part_model_label, quantity, reorder_threshold, last_restock"); // Added last_restock
 
   if (inventoryError) {
     console.error("Error fetching inventory parts:", inventoryError);
@@ -54,7 +55,11 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[], cu
     inventoryData.forEach(item => {
       const key = `${item.machine_label}|${item.part_type_label}|${item.part_model_label}`;
       uniqueKeys.add(key);
-      inventoryMap.set(key, { quantity: item.quantity, reorder_threshold: item.reorder_threshold });
+      inventoryMap.set(key, { 
+        quantity: item.quantity, 
+        reorder_threshold: item.reorder_threshold,
+        last_restock: item.last_restock, // Mapped last_restock
+      });
     });
   }
 
@@ -80,7 +85,8 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[], cu
         imageUrl: customImageUrl || partTypeData?.image_url, 
         ...(inventoryStatus && { 
           quantity: inventoryStatus.quantity, 
-          reorderThreshold: inventoryStatus.reorder_threshold 
+          reorderThreshold: inventoryStatus.reorder_threshold,
+          lastRestock: inventoryStatus.last_restock, // Added to PartData object
         }),
       });
     }

@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import PartImageUploader from "./PartImageUploader";
+import PartInventoryManager from "./PartInventoryManager"; // Import the new component
 import { useRQClient } from "@/hooks/use-query-client";
 import { useAllMachines } from "@/hooks/use-all-machines";
 import { supabase } from "@/integrations/supabase/client";
@@ -243,7 +244,7 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
         {/* Summary Stats */}
         <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">
           
-          {/* Inventory Status */}
+          {/* Inventory Status (Simplified, main management is below) */}
           <Card className={needsReorder ? "border-red-500" : ""}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Inventory Status</CardTitle>
@@ -304,27 +305,17 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
         </div>
       </div>
 
-      {/* Frequency Management Info */}
+      <Separator />
+      
+      {/* Inventory Management Section */}
       <section>
-        <h2 className="text-2xl font-semibold mb-4">Frequency Management</h2>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Info className="h-5 w-5 mr-2" /> Custom Frequency for this Part
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              To set or change the custom replacement frequency for this part, please visit the Advanced Settings page.
-            </p>
-            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
-                <span className="font-medium">Current Custom Frequency:</span>
-                <span className="font-bold text-primary">
-                    {customFrequency ? `${customFrequency} days` : 'Default'}
-                </span>
-            </div>
-          </CardContent>
-        </Card>
+        <PartInventoryManager 
+          uniqueKey={uniqueKey}
+          initialQuantity={partDetails.quantity}
+          initialThreshold={partDetails.reorderThreshold}
+          initialReorderInfo={partDetails.reorderInfo || 'N/A'}
+          initialLastRestock={partDetails.lastRestock} // Assuming PartData might have this field, though it's not explicitly defined in the provided PartData interface, we pass it if it exists.
+        />
       </section>
 
       <Separator />
