@@ -3,32 +3,20 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "./useAuth"; // Corrected import path
 
 export const useUser = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
 
+  // This hook is now largely redundant since useAuth provides the user object,
+  // but we keep it for compatibility and to demonstrate fetching the user object directly if needed.
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        // Fix: use the toast function from useToast, which expects an object
-        toast({
-          title: "Error",
-          description: "Failed to load user information",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
+    if (!authLoading) {
+      setLoading(false);
+    }
+  }, [authLoading]);
 
   return { user, loading };
 };
