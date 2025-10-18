@@ -17,7 +17,7 @@ import { useRQClient } from "@/hooks/use-query-client";
 import { useAllMachines } from "@/hooks/use-all-machines";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { showError, showSuccess } from "@/utils/toast"; // Import showSuccess
+import { showError, showSuccess } from "@/utils/toast";
 
 interface PartDetailViewProps {
   uniqueKey: string;
@@ -149,6 +149,10 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
       fileInputRef.current.value = ''; // Clear file input
     }
   };
+  
+  const handleFileUploadTrigger = () => {
+    fileInputRef.current?.click();
+  };
 
   if (loading) {
     return (
@@ -203,7 +207,7 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
               <AspectRatio 
                 ratio={1 / 1} 
                 className="bg-muted rounded-lg overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => fileInputRef.current?.click()} // Trigger file input on click
+                onClick={handleFileUploadTrigger} // Trigger file input on click
               >
                 {isUploading ? (
                   <div className="flex flex-col items-center text-primary">
@@ -231,7 +235,7 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
             uniqueKey={uniqueKey} 
             currentImageUrl={partDetails.imageUrl}
             onImageUpdated={handleImageUpdated}
-            onFileUpload={handleFileUpload}
+            onFileUploadTrigger={handleFileUploadTrigger} // Pass the trigger function
             isUploading={isUploading}
           />
         </div>

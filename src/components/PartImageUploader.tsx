@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useImperativeHandle } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Link as LinkIcon, Loader2, RotateCcw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { showError, showSuccess } from "@/utils/toast";
 import { useCustomPartImages } from "@/hooks/use-custom-part-images";
@@ -16,16 +15,15 @@ interface PartImageUploaderProps {
   uniqueKey: string;
   currentImageUrl?: string;
   onImageUpdated: () => void;
-  // New prop for handling file upload triggered externally
-  onFileUpload: (file: File) => Promise<void>;
+  // Prop for handling file upload triggered externally
+  onFileUploadTrigger: () => void; // Function to trigger the hidden file input
   isUploading: boolean;
 }
 
-const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated, onFileUpload, isUploading }: PartImageUploaderProps) => {
+const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated, onFileUploadTrigger, isUploading }: PartImageUploaderProps) => {
   const { user } = useAuth();
   const { updateImage } = useCustomPartImages();
   const [urlInput, setUrlInput] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null); // Still needed for manual trigger button
 
   const handleUrlSave = async () => {
     if (!user) {
@@ -84,33 +82,15 @@ const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated, onFileU
 
         <div className="space-y-2">
           <Label htmlFor="file-upload-button">Upload Image File (JPG, PNG)</Label>
-          {/* Hidden input is now in PartDetailView, this button triggers that input via ref */}
           <Button 
             id="file-upload-button"
-            onClick={() => fileInputRef.current?.click()} 
+            onClick={onFileUploadTrigger} 
             variant="outline" 
             className="w-full"
             disabled={isUploading}
           >
             <Upload className="h-4 w-4 mr-2" /> Select File or Take Photo
           </Button>
-          {/* We still need a hidden input here to handle the file selection from this button */}
-          <Input 
-            id="file-upload-internal" 
-            type="file" 
-            accept="image/png, image/jpeg"
-            capture="environment" // Added capture attribute
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                onFileUpload(file);
-              }
-              e.target.value = ''; // Clear input
-            }}
-            ref={fileInputRef}
-            disabled={isUploading}
-            className="hidden"
-          />
         </div>
         
         <div className="flex items-center space-x-2">
