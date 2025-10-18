@@ -165,11 +165,11 @@ const MaintenanceTracker = () => {
 
       switch (filter) {
         case "overdue":
-          return isOverdue;
         case "due_soon":
-          return !isOverdue && isDueSoon;
         case "on_schedule":
-          return !isOverdue && !isDueSoon;
+          // Logic remains the same as before
+          const status = isOverdue ? "overdue" : (isDueSoon ? "due_soon" : "on_schedule");
+          return status === filter;
         case "all":
         default:
           return true;
@@ -242,9 +242,6 @@ const MaintenanceTracker = () => {
 
   return (
     <Card className="p-6">
-      <CardHeader className="p-0 mb-6">
-        <CardTitle className="text-2xl">Maintenance Tracker</CardTitle>
-      </CardHeader>
       <CardContent className="p-0 space-y-6">
         
         {showGettingStarted && (

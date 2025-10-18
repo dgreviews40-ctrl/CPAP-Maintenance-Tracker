@@ -1,26 +1,8 @@
 "use client";
 
-import MaintenanceTracker from "@/components/MaintenanceTracker";
-import DashboardSummary from "@/components/DashboardSummary";
 import Layout from "@/components/Layout";
-import DashboardLayout from "@/components/DashboardLayout";
-import MaintenanceForecastChart from "@/components/MaintenanceForecastChart";
-import UpcomingTasks from "@/components/UpcomingTasks";
-import LowInventoryWidget from "@/components/LowInventoryWidget";
-import InventoryStatusChart from "@/components/InventoryStatusChart";
-import PartUsageRateChart from "@/components/PartUsageRateChart";
-import NotificationCenter from "@/components/NotificationCenter";
+import DashboardTabs from "@/components/DashboardTabs"; // Import the new component
 import { Separator } from "@/components/ui/separator";
-
-const DashboardSidebar = () => (
-  <div className="space-y-6">
-    <DashboardSummary />
-    <UpcomingTasks />
-    <LowInventoryWidget />
-    <MaintenanceForecastChart />
-    <NotificationCenter />
-  </div>
-);
 
 const Index = () => {
   return (
@@ -33,11 +15,7 @@ const Index = () => {
           </p>
         </header>
         <main className="w-full max-w-6xl mx-auto">
-          <DashboardLayout sidebar={<DashboardSidebar />}>
-            <h2 className="text-3xl font-bold mb-4" id="tracker">Maintenance Tracker</h2>
-            <Separator className="mb-6" />
-            <MaintenanceTracker />
-          </DashboardLayout>
+          <DashboardTabs />
         </main>
       </div>
     </Layout>
