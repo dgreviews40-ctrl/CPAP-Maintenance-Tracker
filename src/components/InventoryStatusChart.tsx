@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Warehouse } from "lucide-react";
@@ -28,9 +29,11 @@ const InventoryStatusChart = () => {
   useEffect(() => {
     if (loadingUserParts) return;
 
+    // Filter parts that are tracked in inventory (have quantity and threshold defined)
     const inventoryParts = userParts.filter(p => p.quantity !== undefined && p.reorderThreshold !== undefined);
 
     const data: ChartData[] = inventoryParts.map((part) => ({
+      // Use a combined label for clarity
       name: `${part.modelLabel} (${part.machineLabel})`,
       quantity: part.quantity!,
       threshold: part.reorderThreshold!,
@@ -41,10 +44,10 @@ const InventoryStatusChart = () => {
   }, [userParts, loadingUserParts]);
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center text-lg">
-          <Warehouse className="h-5 w-5 mr-2" /> Inventory Status
+          <Warehouse className="h-5 w-5 mr-2" /> Inventory Status vs. Threshold
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -69,13 +72,22 @@ const InventoryStatusChart = () => {
                 }}
                 layout="vertical"
               >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <XAxis type="number" stroke="hsl(var(--foreground))" allowDecimals={false} />
+                <YAxis 
+                  dataKey="name" 
+                  type="category" 
+                  width={150} 
+                  tick={{ fontSize: 10 }} 
+                  stroke="hsl(var(--foreground))"
+                  // Truncate long labels for vertical axis
+                  tickFormatter={(value) => value.length > 20 ? value.substring(0, 17) + '...' : value}
+                />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))' 
+                    border: '1px solid hsl(var(--border))', 
+                    borderRadius: '0.5rem' 
                   }}
                   formatter={(value, name) => {
                     if (name === 'quantity') return [`Current Stock: ${value}`, 'Quantity'];
@@ -83,8 +95,9 @@ const InventoryStatusChart = () => {
                     return [value, name];
                   }}
                 />
-                <Bar dataKey="quantity" fill="hsl(var(--primary))" name="quantity" />
-                <Bar dataKey="threshold" fill="hsl(var(--yellow-500))" name="threshold" />
+                <Legend />
+                <Bar dataKey="quantity" fill="hsl(var(--primary))" name="Quantity" />
+                <Bar dataKey="threshold" fill="hsl(var(--yellow-500))" name="Threshold" />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -15,9 +15,9 @@ import { Settings as SettingsIcon } from "lucide-react";
 import DashboardSummary from "@/components/DashboardSummary";
 import InventoryAlert from "@/components/InventoryAlert";
 import UpcomingTasks from "@/components/UpcomingTasks";
-import PartUsageRateChart from "@/components/PartUsageRateChart";
 import PartTypeBreakdownChart from "@/components/PartTypeBreakdownChart";
 import MachineHealthScore from "@/components/MachineHealthScore";
+import InventoryStatusChart from "@/components/InventoryStatusChart"; // New Import
 
 
 const Index = () => {
@@ -66,7 +66,7 @@ const Index = () => {
                 <PartTypeBreakdownChart />
               </div>
               
-              <PartUsageRateChart />
+              <InventoryStatusChart /> {/* New Chart */}
             </TabsContent>
             
             {/* Maintenance Tab: Contains the form and the list/tracker */}
