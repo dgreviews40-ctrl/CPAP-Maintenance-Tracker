@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Clock, CalendarCheck, AlertTriangle } from "lucide-react";
 import { useMaintenanceHistory, MaintenanceEntry } from "@/hooks/use-maintenance-history";
 import { format, parseISO, differenceInDays, startOfDay, isBefore } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { Link } from "react-router-dom"; // Import Link
-import { parseMaintenanceMachineString, generateUniqueKey } from "@/utils/parts"; // Import utilities
+import { Link } from "react-router-dom";
+import { parseMaintenanceMachineString, generateUniqueKey } from "@/utils/parts";
 
 interface TimelineTask {
   id: string;
@@ -16,7 +16,7 @@ interface TimelineTask {
   next_maintenance: string;
   daysAway: number;
   status: 'overdue' | 'due_soon' | 'on_schedule';
-  uniqueKey: string; // Added uniqueKey
+  uniqueKey: string;
 }
 
 const getStatus = (dateStr: string, daysAway: number): TimelineTask['status'] => {
@@ -27,11 +27,9 @@ const getStatus = (dateStr: string, daysAway: number): TimelineTask['status'] =>
 
 const MaintenanceTimelineChart = () => {
   const { history, loading: loadingHistory } = useMaintenanceHistory();
-  const [timelineTasks, setTimelineTasks] = useState<TimelineTask[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (loadingHistory) return;
+  const timelineTasks = useMemo(() => {
+    if (loadingHistory) return [];
 
     const allEntries = Object.values(history).flat();
     const today = startOfDay(new Date());
@@ -55,11 +53,10 @@ const MaintenanceTimelineChart = () => {
       .sort((a, b) => a.daysAway - b.daysAway) // Sort by closest date first
       .slice(0, 10); // Show next 10 tasks
 
-    setTimelineTasks(tasks);
-    setLoading(false);
+    return tasks;
   }, [history, loadingHistory]);
 
-  if (loading) {
+  if (loadingHistory) {
     return (
       <Card className="w-full">
         <CardHeader>

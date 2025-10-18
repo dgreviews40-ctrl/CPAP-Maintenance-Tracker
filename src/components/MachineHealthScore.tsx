@@ -3,90 +3,13 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, HeartPulse, CheckCircle, AlertTriangle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { isBefore, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
-
-interface HealthStats {
-  score: number;
-  total: number;
-  overdue: number;
-}
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"; // Import the new hook
 
 const MachineHealthScore = () => {
-  const [stats, setStats] = useState<HealthStats>({
-    score: 100,
-    total: 0,
-    overdue: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const { stats, loading } = useDashboardStats();
 
-  useEffect(() => {
-    const fetchAndCalculateScore = async () => {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from("maintenance_entries")
-        .select("next_maintenance");
-
-      if (error) {
-        console.error("Error fetching maintenance entries for health score:", error);
-        setLoading(false);
-        return;
-      }
-
-      if (data) {
-        const total = data.length;
-        const today = startOfDay(new Date());
-        let overdueCount = 0;
-
-        data.forEach((entry: { next_maintenance: string }) => {
-          if (!entry.next_maintenance) return;
-
-          // Handle timezone issues by replacing hyphens with slashes
-          const nextMaintenanceDate = startOfDay(
-            new Date(entry.next_maintenance.replace(/-/g, "/")),
-          );
-          
-          if (isNaN(nextMaintenanceDate.getTime())) return;
-
-          if (isBefore(nextMaintenanceDate, today)) {
-            overdueCount++;
-          }
-        });
-        
-        let score = 100;
-        if (total > 0) {
-          // Score = (Total - Overdue) / Total * 100
-          score = Math.max(0, Math.round(((total - overdueCount) / total) * 100));
-        }
-
-        setStats({
-          score,
-          total,
-          overdue: overdueCount,
-        });
-      }
-      setLoading(false);
-    };
-
-    fetchAndCalculateScore();
-  }, []);
-
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-500";
-    if (score >= 70) return "text-yellow-500";
-    return "text-red-500";
-  };
-  
-  const getStatusText = (score: number) => {
-    if (stats.total === 0) return "No tasks recorded";
-    if (score >= 90) return "Excellent compliance";
-    if (score >= 70) return "Good, but needs attention";
-    return "Poor compliance, tasks overdue";
-  };
-
-  if (loading) {
+  if (loading || !stats) {
     return (
       <Card className="w-full">
         <CardHeader>
@@ -101,7 +24,29 @@ const MachineHealthScore = () => {
     );
   }
   
-  const scoreColor = getScoreColor(stats.score);
+  const total = stats.total;
+  const overdueCount = stats.overdue;
+
+  let score = 100;
+  if (total > 0) {
+    // Score = (Total - Overdue) / Total * 100
+    score = Math.max(0, Math.round(((total - overdueCount) / total) * 100));
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return "text-green-500";
+    if (score >= 70) return "text-yellow-500";
+    return "text-red-500";
+  };
+  
+  const getStatusText = (score: number) => {
+    if (total === 0) return "No tasks recorded";
+    if (score >= 90) return "Excellent compliance";
+    if (score >= 70) return "Good, but needs attention";
+    return "Poor compliance, tasks overdue";
+  };
+
+  const scoreColor = getScoreColor(score);
 
   return (
     <Card className="w-full">
@@ -111,7 +56,7 @@ const MachineHealthScore = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center justify-center h-64 space-y-4">
-        {stats.total === 0 ? (
+        {total === 0 ? (
           <div className="text-center text-muted-foreground">
             <CheckCircle className="h-8 w-8 mx-auto mb-2" />
             <p>Record your first maintenance task to calculate your score.</p>
@@ -119,13 +64,13 @@ const MachineHealthScore = () => {
         ) : (
           <>
             <div className={cn("text-7xl font-extrabold", scoreColor)}>
-              {stats.score}%
+              {score}%
             </div>
             <p className={cn("text-lg font-semibold", scoreColor)}>
-              {getStatusText(stats.score)}
+              {getStatusText(score)}
             </p>
             <div className="text-sm text-muted-foreground">
-              {stats.overdue} tasks currently overdue out of {stats.total} total tracked tasks.
+              {overdueCount} tasks currently overdue out of {total} total tracked tasks.
             </div>
           </>
         )}

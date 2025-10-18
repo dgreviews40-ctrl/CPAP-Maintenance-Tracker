@@ -9,13 +9,16 @@ import { format, isBefore, isWithinInterval, addDays, startOfDay, differenceInDa
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { parseMaintenanceMachineString, generateUniqueKey } from "@/utils/parts";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface UpcomingTask {
   id: string;
   machine: string;
   next_maintenance: string;
   status: 'overdue' | 'due_soon' | 'on_schedule';
-  uniqueKey: string; // Added uniqueKey
+  uniqueKey: string;
 }
 
 const getStatus = (dateStr: string): UpcomingTask['status'] => {
@@ -27,37 +30,39 @@ const getStatus = (dateStr: string): UpcomingTask['status'] => {
   return 'on_schedule';
 };
 
-const UpcomingTasks = () => {
-  const [tasks, setTasks] = useState<UpcomingTask[]>([]);
-  const [loading, setLoading] = useState(true);
+const fetchUpcomingTasks = async (userId: string | undefined): Promise<UpcomingTask[]> => {
+  if (!userId) return [];
+  
+  const { data, error } = await supabase
+    .from("maintenance_entries")
+    .select("id, machine, next_maintenance")
+    .order("next_maintenance", { ascending: true })
+    .limit(5);
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("maintenance_entries")
-        .select("id, machine, next_maintenance")
-        .order("next_maintenance", { ascending: true })
-        .limit(5);
-
-      if (error) {
-        console.error("Error fetching upcoming tasks:", error);
-      } else if (data) {
-        const processedTasks = data.map(item => {
-          const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(item.machine);
-          return {
-            ...item,
-            status: getStatus(item.next_maintenance),
-            uniqueKey: generateUniqueKey(machineLabel, partTypeLabel, modelLabel),
-          };
-        });
-        setTasks(processedTasks);
-      }
-      setLoading(false);
+  if (error) {
+    console.error("Error fetching upcoming tasks:", error);
+    throw new Error("Failed to fetch upcoming tasks.");
+  }
+  
+  return data.map(item => {
+    const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(item.machine);
+    return {
+      ...item,
+      status: getStatus(item.next_maintenance),
+      uniqueKey: generateUniqueKey(machineLabel, partTypeLabel, modelLabel),
     };
+  });
+};
 
-    fetchTasks();
-  }, []);
+const UpcomingTasks = () => {
+  const { user, isLoading: authLoading } = useAuth();
+  
+  const { data: tasks = [], isLoading } = useQuery<UpcomingTask[]>({
+    queryKey: queryKeys.maintenance.schedule(user?.id || 'anonymous').concat(['upcoming']), // Use a specific key for this list
+    queryFn: () => fetchUpcomingTasks(user?.id),
+    enabled: !authLoading && !!user,
+    staleTime: 1000 * 10, // 10 seconds
+  });
 
   return (
     <Card className="h-full">
@@ -67,7 +72,7 @@ const UpcomingTasks = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center items-center h-48">
             <Wrench className="h-8 w-8 animate-spin text-primary" />
           </div>

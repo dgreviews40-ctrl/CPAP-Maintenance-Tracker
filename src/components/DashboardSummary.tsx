@@ -1,106 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, CalendarCheck, Wrench, Clock } from "lucide-react";
-import { isBefore, isWithinInterval, addDays, startOfDay, format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
-import { parseMaintenanceMachineString, generateUniqueKey } from "@/utils/parts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-interface Stats {
-  overdue: number;
-  dueSoon: number;
-  total: number;
-  nextDue: {
-    machine: string;
-    date: string;
-    daysAway: number;
-    uniqueKey: string; // Added uniqueKey
-  } | null;
-}
+import { useDashboardStats } from "@/hooks/use-dashboard-stats"; // Import the new hook
 
 const DashboardSummary = () => {
-  const [stats, setStats] = useState<Stats>({
-    overdue: 0,
-    dueSoon: 0,
-    total: 0,
-    nextDue: null,
-  });
-  const [loading, setLoading] = useState(true);
+  const { stats, loading } = useDashboardStats();
 
-  useEffect(() => {
-    const fetchAndCalculateStats = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("maintenance_entries")
-        .select("machine, next_maintenance")
-        .order("next_maintenance", { ascending: true }); // Order by date to easily find the next due item
-
-      if (error) {
-        console.error("Error fetching maintenance entries for stats:", error);
-        setLoading(false);
-        return;
-      }
-
-      if (data) {
-        const today = startOfDay(new Date());
-        const sevenDaysFromNow = addDays(today, 7);
-
-        let overdueCount = 0;
-        let dueSoonCount = 0;
-        let nextDueItem: Stats['nextDue'] = null;
-
-        data.forEach((entry: { machine: string, next_maintenance: string }) => {
-          if (!entry.next_maintenance) return; // Skip if date is missing
-
-          // Handle timezone issues by replacing hyphens with slashes
-          const nextMaintenanceDate = startOfDay(
-            new Date(entry.next_maintenance.replace(/-/g, "/")),
-          );
-          
-          if (isNaN(nextMaintenanceDate.getTime())) return; // Skip if date is invalid
-
-          if (isBefore(nextMaintenanceDate, today)) {
-            overdueCount++;
-          } else if (
-            isWithinInterval(nextMaintenanceDate, {
-              start: today,
-              end: sevenDaysFromNow,
-            })
-          ) {
-            dueSoonCount++;
-          }
-          
-          // Find the very next item that is not overdue
-          if (!nextDueItem && !isBefore(nextMaintenanceDate, today)) {
-            const daysAway = differenceInDays(nextMaintenanceDate, today);
-            const { machineLabel, partTypeLabel, modelLabel } = parseMaintenanceMachineString(entry.machine);
-            
-            nextDueItem = {
-              machine: entry.machine,
-              date: format(nextMaintenanceDate, 'MMM dd, yyyy'),
-              daysAway: daysAway,
-              uniqueKey: generateUniqueKey(machineLabel, partTypeLabel, modelLabel),
-            };
-          }
-        });
-
-        setStats({
-          overdue: overdueCount,
-          dueSoon: dueSoonCount,
-          total: data.length,
-          nextDue: nextDueItem,
-        });
-      }
-      setLoading(false);
-    };
-
-    fetchAndCalculateStats();
-  }, []);
-
-  if (loading) {
+  if (loading || !stats) {
     return (
       <div className="grid gap-4 md:grid-cols-4">
         {[...Array(4)].map((_, i) => (
@@ -147,7 +56,7 @@ const DashboardSummary = () => {
             </>
           ) : (
             <>
-              <div className="text-xl font-bold">N/A</div>
+              <div className="text-2xl font-bold">N/A</div>
               <p className="text-xs text-muted-foreground mt-1">No upcoming tasks</p>
             </>
           )}
