@@ -15,7 +15,6 @@ import { Settings as SettingsIcon } from "lucide-react";
 import DashboardSummary from "@/components/DashboardSummary";
 import InventoryAlert from "@/components/InventoryAlert";
 import UpcomingTasks from "@/components/UpcomingTasks";
-import MaintenanceForecastChart from "@/components/MaintenanceForecastChart";
 import PartUsageRateChart from "@/components/PartUsageRateChart";
 import MaintenanceActivityChart from "@/components/MaintenanceActivityChart";
 import PartTypeBreakdownChart from "@/components/PartTypeBreakdownChart";
@@ -59,14 +58,8 @@ const Index = () => {
               <InventoryAlert />
               <DashboardSummary />
               
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Upcoming Tasks (Left, 2/3 width) */}
-                <div className="lg:col-span-2">
-                  <UpcomingTasks />
-                </div>
-                {/* Maintenance Forecast Chart (Right, 1/3 width) */}
-                <MaintenanceForecastChart />
-              </div>
+              {/* Upcoming Tasks now takes full width */}
+              <UpcomingTasks />
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <MachineHealthScore />
