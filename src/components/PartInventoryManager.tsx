@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,12 @@ const PartInventoryManager = ({
   
   const [machineLabel, partTypeLabel, partModelLabel] = uniqueKey.split('|');
 
+  // Sync local state with props when they change (e.g., after a successful restock/refetch)
+  useEffect(() => {
+    setQuantity(initialQuantity);
+    setThreshold(initialThreshold);
+  }, [initialQuantity, initialThreshold]);
+
   const needsReorder = quantity <= threshold;
   const isTracked = initialQuantity !== undefined;
 
@@ -62,7 +68,9 @@ const PartInventoryManager = ({
       const { data: existing, error: fetchError } = await supabase
         .from("part_inventory")
         .select("id")
-        .eq("unique_part_key", uniqueKey)
+        .eq("machine_label", machineLabel) // Use labels for unique key lookup
+        .eq("part_type_label", partTypeLabel)
+        .eq("part_model_label", partModelLabel)
         .limit(1);
 
       if (fetchError) throw fetchError;
@@ -109,11 +117,13 @@ const PartInventoryManager = ({
 
   const handleSaveThreshold = async () => {
     setIsSavingThreshold(true);
+    const originalThreshold = threshold; // Capture current local state before mutation
     try {
       await upsertMutation.mutateAsync({ reorder_threshold: threshold });
       showSuccess("Reorder threshold saved!");
     } catch (e) {
-      // Handled by mutation onError
+      // Rollback state if mutation fails
+      setThreshold(initialThreshold);
     } finally {
       setIsSavingThreshold(false);
     }
@@ -130,13 +140,17 @@ const PartInventoryManager = ({
       await upsertMutation.mutateAsync({ 
         quantity: newQuantity, 
         last_restock: today,
-        reorder_threshold: threshold, // Ensure threshold is also saved if it was changed
+        reorder_threshold: threshold,
       });
-      setQuantity(newQuantity);
+      // State update will happen via useEffect when props change after refetch, 
+      // but we update locally for immediate feedback if needed.
+      setQuantity(newQuantity); 
       setRestockAmount(1);
       showSuccess(`${restockAmount} units of ${partModelLabel} restocked!`);
     } catch (e) {
-      // Handled by mutation onError
+      // Rollback local state if restock fails
+      setQuantity(initialQuantity);
+      setThreshold(initialThreshold);
     } finally {
       setIsRestocking(false);
     }
@@ -144,17 +158,22 @@ const PartInventoryManager = ({
   
   const handleManualQuantityChange = async (newQuantity: number) => {
     if (newQuantity < 0) return;
+    
+    // Update local state immediately for responsiveness
     setQuantity(newQuantity);
     
-    // Debounce or save immediately? For simplicity, let's save immediately on change/blur
+    // Capture the value we are trying to save
+    const quantityToSave = newQuantity;
+    
     try {
       await upsertMutation.mutateAsync({ 
-        quantity: newQuantity,
-        reorder_threshold: threshold, // Ensure threshold is also saved
+        quantity: quantityToSave,
+        reorder_threshold: threshold,
       });
       showSuccess("Quantity updated manually.");
     } catch (e) {
-      // Handled by mutation onError
+      // Rollback local state if save fails
+      setQuantity(initialQuantity);
     }
   };
 
@@ -181,7 +200,7 @@ const PartInventoryManager = ({
               id="current-quantity"
               type="number"
               value={quantity}
-              onChange={(e) => handleManualQuantityChange(Math.max(0, Number(e.target.value)))}
+              onChange={(e) => setQuantity(Math.max(0, Number(e.target.value)))}
               onBlur={(e) => handleManualQuantityChange(Math.max(0, Number(e.target.value)))}
               min="0"
               disabled={upsertMutation.isPending}
