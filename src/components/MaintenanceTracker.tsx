@@ -21,8 +21,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc, subDays, format } from "date-fns";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Warehouse, History } from "lucide-react";
+import { Loader2, Warehouse, History, Database } from "lucide-react";
 import EditMaintenanceDialog from "./EditMaintenanceDialog"; 
+import { Button } from "@/components/ui/button"; // Import Button
 
 export type MaintenanceEntry = {
   id: string;
@@ -370,6 +371,20 @@ const MaintenanceTracker = () => {
           <DashboardSummary key={`summary-${entries.length}`} />
           
           {!loading && entries.length === 0 && <GettingStarted onSeedClick={handleSeedData} isSeeding={isSeeding} />}
+          
+          {/* Temporary Debug Button */}
+          {!loading && (
+            <Button 
+              onClick={handleSeedData} 
+              disabled={isSeeding} 
+              variant="secondary" 
+              className="w-full"
+            >
+              <Database className="h-4 w-4 mr-2" />
+              {isSeeding ? "Seeding Data..." : "Force Load Sample Data (Debug)"}
+            </Button>
+          )}
+          {/* End Temporary Debug Button */}
 
           <div key={`charts-${entries.length}`}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
