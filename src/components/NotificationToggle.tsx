@@ -4,7 +4,8 @@ import { useMaintenanceNotifications } from "@/hooks/use-maintenance-notificatio
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, BellOff, Bell } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const NotificationToggle = () => {
   const { isEnabled, toggleEnabled, permissionStatus } = useMaintenanceNotifications();
@@ -22,9 +23,17 @@ const NotificationToggle = () => {
   }
 
   return (
-    <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+    <div className={cn(
+      "flex items-center justify-between p-4 border rounded-lg transition-colors",
+      isEnabled 
+        ? "bg-green-500/10 border-green-500/50" 
+        : "bg-red-500/10 border-red-500/50"
+    )}>
       <Label htmlFor="notification-toggle" className="flex flex-col space-y-1">
-        <span className="text-base font-semibold">Maintenance Reminders</span>
+        <span className={cn("text-base font-semibold flex items-center", isEnabled ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+          {isEnabled ? <Bell className="h-5 w-5 mr-2" /> : <BellOff className="h-5 w-5 mr-2" />}
+          Maintenance Reminders
+        </span>
         <span className="text-sm text-muted-foreground">
           {isEnabled ? "Desktop notifications are currently ON." : "Desktop notifications are currently OFF."}
         </span>
