@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Package, Calendar, Wrench, AlertTriangle, Info } from "lucide-react";
+import { Loader2, Package, Calendar, Wrench, AlertTriangle, Info, Image as ImageIcon } from "lucide-react";
 import { useUserParts, PartData } from "@/hooks/use-user-parts";
 import { useCustomFrequencies } from "@/hooks/use-custom-frequencies";
 import { useMaintenanceHistory, MaintenanceEntry } from "@/hooks/use-maintenance-history";
@@ -10,7 +10,7 @@ import { getMaintenanceFrequencyDays } from "@/utils/frequency";
 import { format, parseISO } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import FrequencyManagement from "./FrequencyManagement"; // Reusing the management component
+import { AspectRatio } from "@/components/ui/aspect-ratio"; // Import AspectRatio
 
 interface PartDetailViewProps {
   uniqueKey: string;
@@ -58,64 +58,91 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
   return (
     <div className="space-y-8">
       
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Image and Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
-        {/* Inventory Status */}
-        <Card className={needsReorder ? "border-red-500" : ""}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inventory Status</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+        {/* Part Image */}
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-lg">Part Visual</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {partDetails.quantity !== undefined ? partDetails.quantity : 'N/A'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Threshold: {partDetails.reorderThreshold !== undefined ? partDetails.reorderThreshold : 'N/A'}
-            </p>
-            {needsReorder && (
-              <Badge variant="destructive" className="mt-2">
-                <AlertTriangle className="h-3 w-3 mr-1" /> Reorder Needed
-              </Badge>
-            )}
+            <AspectRatio ratio={1 / 1} className="bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+              {partDetails.imageUrl ? (
+                <img 
+                  src={partDetails.imageUrl} 
+                  alt={`${partDetails.modelLabel} image`} 
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="text-muted-foreground flex flex-col items-center">
+                  <ImageIcon className="h-8 w-8 mb-2" />
+                  <p>No Image Available</p>
+                </div>
+              )}
+            </AspectRatio>
           </CardContent>
         </Card>
         
-        {/* Next Maintenance */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Next Due Date</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {partHistory[0]?.next_maintenance ? format(parseISO(partHistory[0].next_maintenance), 'MMM dd, yyyy') : 'N/A'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Last Maintenance: {partHistory[0]?.last_maintenance ? format(parseISO(partHistory[0].last_maintenance), 'MMM dd, yyyy') : 'N/A'}
-            </p>
-          </CardContent>
-        </Card>
-        
-        {/* Effective Frequency */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Effective Frequency</CardTitle>
-            <Wrench className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {effectiveFrequency ? `${effectiveFrequency} Days` : 'Unknown'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {customFrequency ? 'Using Custom Setting' : (defaultFrequency ? 'Using Default Setting' : 'No Default Found')}
-            </p>
-          </CardContent>
-        </Card>
+        {/* Summary Stats */}
+        <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          
+          {/* Inventory Status */}
+          <Card className={needsReorder ? "border-red-500" : ""}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Inventory Status</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {partDetails.quantity !== undefined ? partDetails.quantity : 'N/A'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Threshold: {partDetails.reorderThreshold !== undefined ? partDetails.reorderThreshold : 'N/A'}
+              </p>
+              {needsReorder && (
+                <Badge variant="destructive" className="mt-2">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Reorder Needed
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Next Maintenance */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Next Due Date</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {partHistory[0]?.next_maintenance ? format(parseISO(partHistory[0].next_maintenance), 'MMM dd, yyyy') : 'N/A'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Last Maintenance: {partHistory[0]?.last_maintenance ? format(parseISO(partHistory[0].last_maintenance), 'MMM dd, yyyy') : 'N/A'}
+              </p>
+            </CardContent>
+          </Card>
+          
+          {/* Effective Frequency */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Effective Frequency</CardTitle>
+              <Wrench className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {effectiveFrequency ? `${effectiveFrequency} Days` : 'Unknown'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {customFrequency ? 'Using Custom Setting' : (defaultFrequency ? 'Using Default Setting' : 'No Default Found')}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Frequency Management (Reusing the component logic) */}
+      {/* Frequency Management Info */}
       <section>
         <h2 className="text-2xl font-semibold mb-4">Frequency Management</h2>
         <Card>
@@ -125,8 +152,6 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Note: We can't easily reuse FrequencyManagement as it manages ALL parts. 
-               Instead, we'll display the info and link to the settings page. */}
             <p className="text-muted-foreground mb-4">
               To set or change the custom replacement frequency for this part, please visit the Advanced Settings page.
             </p>

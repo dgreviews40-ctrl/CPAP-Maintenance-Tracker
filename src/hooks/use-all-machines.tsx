@@ -15,6 +15,7 @@ export interface PartModel {
 export interface PartType {
   value: string;
   label: string;
+  image_url?: string; // Added image_url
   models: PartModel[];
 }
 
@@ -69,6 +70,7 @@ const fetchAllMachines = async (userId: string | undefined): Promise<Machine[]> 
       partTypeEntry = {
         value: partTypeValue,
         label: partTypeLabel,
+        image_url: "/placeholder.svg", // Default image for custom parts
         models: [],
       };
       machine.parts.push(partTypeEntry);

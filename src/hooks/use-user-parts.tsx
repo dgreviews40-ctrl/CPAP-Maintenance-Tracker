@@ -15,6 +15,7 @@ export interface PartData {
   uniqueKey: string;
   quantity?: number;
   reorderThreshold?: number;
+  imageUrl?: string; // Added imageUrl
 }
 
 const fetchUserParts = async (userId: string | undefined, allMachines: any[]): Promise<PartData[]> => {
@@ -72,6 +73,7 @@ const fetchUserParts = async (userId: string | undefined, allMachines: any[]): P
         modelLabel,
         reorderInfo: modelData.reorder_info,
         uniqueKey: key,
+        imageUrl: partTypeData?.image_url, // Retrieve image URL from partTypeData
         ...(inventoryStatus && { 
           quantity: inventoryStatus.quantity, 
           reorderThreshold: inventoryStatus.reorder_threshold 
