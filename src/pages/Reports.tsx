@@ -1,7 +1,6 @@
 "use client";
 
 import Layout from "@/components/Layout";
-// Removed imports for FrequencyManagement and NotificationCenter
 import PartReplacementHistory from "@/components/PartReplacementHistory";
 import DataManagement from "@/components/DataManagement";
 import { Separator } from "@/components/ui/separator";
@@ -21,7 +20,7 @@ const Reports = () => {
               </Button>
             </Link>
             <header className="text-center flex-grow">
-              <h1 className="text-4xl font-bold">Reports & Advanced Settings</h1>
+              <h1 className="text-4xl font-bold">Advanced Settings</h1>
               <p className="text-xl text-muted-foreground">
                 Analyze usage, manage frequencies, and configure notifications.
               </p>
@@ -38,8 +37,6 @@ const Reports = () => {
               <PartReplacementHistory />
             </section>
 
-            {/* Removed Advanced Configuration Section */}
-            
             <section>
               <h2 className="text-2xl font-semibold mb-4">Data Management</h2>
               <Separator className="mb-4" />
