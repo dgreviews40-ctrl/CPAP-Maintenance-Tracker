@@ -5,7 +5,7 @@ import MaintenanceSchedule from "@/components/MaintenanceSchedule";
 import MaintenanceLog from "@/components/MaintenanceLog";
 import Inventory from "@/components/Inventory";
 import DashboardTabs from "@/components/DashboardTabs";
-import { TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 
 const Index = () => {
@@ -22,19 +22,21 @@ const Index = () => {
             </p>
           </header>
           
-          <DashboardTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <DashboardTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-          <div className="mt-6">
-            <TabsContent value="schedule">
-              <MaintenanceSchedule />
-            </TabsContent>
-            <TabsContent value="maintenance">
-              <MaintenanceLog />
-            </TabsContent>
-            <TabsContent value="inventory">
-              <Inventory />
-            </TabsContent>
-          </div>
+            <div className="mt-6">
+              <TabsContent value="schedule">
+                <MaintenanceSchedule />
+              </TabsContent>
+              <TabsContent value="maintenance">
+                <MaintenanceLog />
+              </TabsContent>
+              <TabsContent value="inventory">
+                <Inventory />
+              </TabsContent>
+            </div>
+          </Tabs>
         </div>
       </div>
     </Layout>
