@@ -22,7 +22,7 @@ export type PartHistoryMap = {
 };
 
 const fetchMaintenanceHistory = async (userId: string | undefined, userParts: PartData[]): Promise<PartHistoryMap> => {
-  if (!userId || userParts.length === 0) return {};
+  if (!userId) return {};
 
   // Fetch all maintenance entries for the user
   const { data, error } = await supabase
@@ -63,7 +63,7 @@ export function useMaintenanceHistory() {
   const { data: history = {}, isLoading, refetch } = useQuery<PartHistoryMap>({
     queryKey: queryKeys.maintenance.history(user?.id || 'anonymous'),
     queryFn: () => fetchMaintenanceHistory(user?.id, userParts),
-    enabled: !authLoading && !partsLoading,
+    enabled: !authLoading && !!user && !partsLoading, // Ensure user is present and parts are loaded
     staleTime: 1000 * 10, // 10 seconds
   });
 

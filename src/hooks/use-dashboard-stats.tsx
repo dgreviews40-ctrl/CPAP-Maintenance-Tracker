@@ -97,7 +97,7 @@ export function useDashboardStats() {
   const { data, isLoading, error, refetch } = useQuery<Stats>({
     queryKey: queryKeys.maintenance.schedule(user?.id || 'anonymous'),
     queryFn: () => fetchDashboardStats(user?.id),
-    enabled: !authLoading,
+    enabled: !authLoading && !!user, // Ensure user is present before fetching stats
     staleTime: 1000 * 10, // 10 seconds
   });
 
