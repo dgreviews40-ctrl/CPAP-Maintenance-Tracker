@@ -7,6 +7,7 @@ import Inventory from "@/components/Inventory";
 import DashboardTabs from "@/components/DashboardTabs";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
+import MachineConfiguration from "@/components/MachineConfiguration"; // Import the new component
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("schedule");
@@ -34,6 +35,9 @@ const Index = () => {
               </TabsContent>
               <TabsContent value="inventory">
                 <Inventory />
+              </TabsContent>
+              <TabsContent value="machines">
+                <MachineConfiguration />
               </TabsContent>
             </div>
           </Tabs>
