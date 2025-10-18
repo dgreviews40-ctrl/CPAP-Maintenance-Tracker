@@ -133,7 +133,7 @@ const MaintenanceTracker = () => {
     return true;
   }, [invalidateMaintenanceQueries]);
 
-  // --- Filtering and Sorting Logic (omitted for brevity, remains the same) ---
+  // --- Filtering and Sorting Logic ---
 
   const filteredAndSortedEntries = useMemo(() => {
     const today = startOfDay(new Date());
@@ -151,25 +151,25 @@ const MaintenanceTracker = () => {
       if (!entry.next_maintenance) return false; // Skip entries without a next maintenance date
 
       // Handle timezone issues by replacing hyphens with slashes
-      const nextMaintenanceDate = startOfDay(
-        new Date(entry.next_maintenance.replace(/-/g, "/")),
-      );
+      const nextMaintenanceDate = new Date(entry.next_maintenance.replace(/-/g, "/"));
       
       if (isNaN(nextMaintenanceDate.getTime())) return false; // Skip invalid dates
 
-      const isOverdue = isBefore(nextMaintenanceDate, today);
-      const isDueSoon = isWithinInterval(nextMaintenanceDate, {
+      const nextMaintenanceDateStartOfDay = startOfDay(nextMaintenanceDate);
+      
+      const isOverdue = isBefore(nextMaintenanceDateStartOfDay, today);
+      const isDueSoon = isWithinInterval(nextMaintenanceDateStartOfDay, {
         start: today,
         end: sevenDaysFromNow,
       });
 
       switch (filter) {
         case "overdue":
+          return isOverdue;
         case "due_soon":
+          return !isOverdue && isDueSoon;
         case "on_schedule":
-          // Logic remains the same as before
-          const status = isOverdue ? "overdue" : (isDueSoon ? "due_soon" : "on_schedule");
-          return status === filter;
+          return !isOverdue && !isDueSoon;
         case "all":
         default:
           return true;

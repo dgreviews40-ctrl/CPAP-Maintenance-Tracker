@@ -46,21 +46,21 @@ const getStatus = (
   
   const today = startOfDay(new Date());
   // Handle timezone issues by replacing hyphens with slashes
-  const nextMaintenanceDate = startOfDay(
-    new Date(dateStr.replace(/-/g, "/")),
-  );
+  const nextMaintenanceDate = new Date(dateStr.replace(/-/g, "/"));
   
   if (isNaN(nextMaintenanceDate.getTime())) {
     return { label: "Invalid Date", color: "bg-gray-500" };
   }
+  
+  const nextMaintenanceDateStartOfDay = startOfDay(nextMaintenanceDate);
 
-  if (isBefore(nextMaintenanceDate, today)) {
+  if (isBefore(nextMaintenanceDateStartOfDay, today)) {
     return { label: "Overdue", color: "bg-red-500" };
   }
 
   const sevenDaysFromNow = addDays(today, 7);
   if (
-    isWithinInterval(nextMaintenanceDate, {
+    isWithinInterval(nextMaintenanceDateStartOfDay, {
       start: today,
       end: sevenDaysFromNow,
     })
@@ -74,6 +74,7 @@ const getStatus = (
 // Helper function to safely format date strings
 const safeFormatDate = (dateStr: string): string => {
   if (!dateStr) return "N/A";
+  // Handle timezone issues by replacing hyphens with slashes
   const date = new Date(dateStr.replace(/-/g, "/"));
   if (isNaN(date.getTime())) return "Invalid Date";
   return date.toLocaleDateString();
