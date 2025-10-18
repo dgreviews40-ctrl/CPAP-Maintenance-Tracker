@@ -171,6 +171,7 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
         ref={fileInputRef} 
         onChange={handleFileChange} 
         accept="image/png, image/jpeg"
+        capture="environment" // Added capture attribute
         className="hidden"
         disabled={isUploading}
       />
@@ -204,7 +205,7 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
                 ) : (
                   <div className="text-muted-foreground flex flex-col items-center">
                     <ImageIcon className="h-8 w-8 mb-2" />
-                    <p className="text-center">Click to Upload Image</p>
+                    <p className="text-center">Click to Upload Image/Take Photo</p>
                   </div>
                 )}
               </AspectRatio>

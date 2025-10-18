@@ -92,13 +92,14 @@ const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated, onFileU
             className="w-full"
             disabled={isUploading}
           >
-            <Upload className="h-4 w-4 mr-2" /> Select File to Upload
+            <Upload className="h-4 w-4 mr-2" /> Select File or Take Photo
           </Button>
           {/* We still need a hidden input here to handle the file selection from this button */}
           <Input 
             id="file-upload-internal" 
             type="file" 
             accept="image/png, image/jpeg"
+            capture="environment" // Added capture attribute
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
