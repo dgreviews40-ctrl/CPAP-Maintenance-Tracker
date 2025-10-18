@@ -15,6 +15,7 @@ import MaintenanceControls, { MaintenanceFilter, MaintenanceSortKey, Maintenance
 import InventoryStatusChart from "./InventoryStatusChart"; 
 import PartReplacementHistory from "./PartReplacementHistory";
 import MaintenanceTimeline from "./MaintenanceTimeline"; 
+import PartUsageRateChart from "./PartUsageRateChart"; // Import the new chart
 import { supabase } from "@/integrations/supabase/client";
 import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
 import { showSuccess, showError } from "@/utils/toast";
@@ -253,6 +254,7 @@ const MaintenanceTracker = () => {
     
     // 2. Filtering by Machine Name
     if (machineFilter) {
+      // We check if the machine string starts with the machine label, as the string contains part info too.
       result = result.filter(entry => entry.machine.startsWith(machineFilter));
     }
 
@@ -326,6 +328,9 @@ const MaintenanceTracker = () => {
           
           {/* Maintenance Timeline (Full Width) */}
           <MaintenanceTimeline /> 
+          
+          {/* Part Usage Rate Chart (Full Width) */}
+          <PartUsageRateChart />
 
           <MaintenanceForm onAddEntry={addEntry} />
           
