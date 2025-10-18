@@ -18,12 +18,11 @@ import MaintenanceTimeline from "./MaintenanceTimeline";
 import PartUsageRateChart from "./PartUsageRateChart";
 import GettingStarted from "./GettingStarted";
 import { supabase } from "@/integrations/supabase/client";
-import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc } from "date-fns";
-import { showSuccess, showError } from "@/utils/toast";
+import { isBefore, addDays, startOfDay, isWithinInterval, compareAsc, compareDesc, subDays, format } from "date-fns";
+import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Warehouse, History } from "lucide-react";
 import EditMaintenanceDialog from "./EditMaintenanceDialog"; 
-import { useSeedData } from "@/hooks/use-seed-data"; // Import the new hook
 
 export type MaintenanceEntry = {
   id: string;
@@ -63,6 +62,7 @@ const MaintenanceTracker = () => {
   const { user, loading: authLoading } = useAuth();
   const [entries, setEntries] = useState<MaintenanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   
   // State for Controls
@@ -131,10 +131,7 @@ const MaintenanceTracker = () => {
       checkAndNotify(fetchedEntries as MaintenanceEntry[]);
     }
     setLoading(false);
-  }, [user]);
-
-  // Use the new seed data hook, passing fetchEntries as the callback
-  useSeedData(fetchEntries);
+  }, [user, checkAndNotify]);
 
   useEffect(() => {
     if (user) {
@@ -144,6 +141,87 @@ const MaintenanceTracker = () => {
       setLoading(false);
     }
   }, [user, authLoading, fetchEntries]);
+
+  const handleSeedData = async () => {
+    if (!user) return;
+    setIsSeeding(true);
+    const toastId = showLoading("Setting up sample data...");
+
+    try {
+      // 1. Clear existing data for a clean slate
+      await supabase.from("maintenance_entries").delete().eq("user_id", user.id);
+      await supabase.from("part_inventory").delete().eq("user_id", user.id);
+
+      // 2. Define seed data
+      const today = new Date();
+      const seedMaintenanceData = [
+        {
+          user_id: user.id,
+          machine: "ResMed AirSense 11 - Filter - Standard Filter (30-day) (SKU: ResMed SKU 37301)",
+          last_maintenance: format(subDays(today, 45), 'yyyy-MM-dd'),
+          next_maintenance: format(subDays(today, 15), 'yyyy-MM-dd'), // Overdue
+          notes: "Sample overdue entry."
+        },
+        {
+          user_id: user.id,
+          machine: "Philips Respironics DreamStation 2 - Tubing - Heated Tubing (SKU: Philips SKU 1122184)",
+          last_maintenance: format(subDays(today, 85), 'yyyy-MM-dd'),
+          next_maintenance: format(addDays(today, 5), 'yyyy-MM-dd'), // Due soon
+          notes: "Sample entry that is due soon."
+        },
+        {
+          user_id: user.id,
+          machine: "ResMed AirSense 11 - Water Chamber - Standard Water Chamber (SKU: ResMed SKU 37300)",
+          last_maintenance: format(subDays(today, 30), 'yyyy-MM-dd'),
+          next_maintenance: format(addDays(today, 150), 'yyyy-MM-dd'), // On schedule
+          notes: "Sample on-schedule entry."
+        }
+      ];
+
+      const seedInventoryData = [
+        {
+          user_id: user.id,
+          machine_label: "ResMed AirSense 11",
+          part_type_label: "Filter",
+          part_model_label: "Standard Filter (30-day)",
+          reorder_info: "ResMed SKU 37301",
+          quantity: 5,
+          reorder_threshold: 2,
+          last_restock: format(today, 'yyyy-MM-dd')
+        },
+        {
+          user_id: user.id,
+          machine_label: "Philips Respironics DreamStation 2",
+          part_type_label: "Tubing",
+          part_model_label: "Heated Tubing",
+          reorder_info: "Philips SKU 1122184",
+          quantity: 1,
+          reorder_threshold: 1, // Needs reorder
+          last_restock: format(subDays(today, 60), 'yyyy-MM-dd')
+        }
+      ];
+
+      // 3. Insert new data
+      const { error: maintenanceInsertError } = await supabase.from("maintenance_entries").insert(seedMaintenanceData);
+      if (maintenanceInsertError) throw maintenanceInsertError;
+
+      const { error: inventoryInsertError } = await supabase.from("part_inventory").insert(seedInventoryData);
+      if (inventoryInsertError) throw inventoryInsertError;
+
+      dismissToast(toastId);
+      showSuccess("Sample data added successfully!");
+      
+      // 4. Refresh the UI
+      await fetchEntries();
+
+    } catch (error) {
+      console.error("Failed to seed data:", error);
+      dismissToast(toastId);
+      showError("Could not add sample data. Please try again.");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const addEntry = async (entry: Omit<MaintenanceEntry, 'id' | 'created_at'>) => {
     if (!user) {
@@ -291,7 +369,7 @@ const MaintenanceTracker = () => {
           
           <DashboardSummary key={`summary-${entries.length}`} />
           
-          {!loading && entries.length === 0 && <GettingStarted />}
+          {!loading && entries.length === 0 && <GettingStarted onSeedClick={handleSeedData} isSeeding={isSeeding} />}
 
           <div key={`charts-${entries.length}`}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
