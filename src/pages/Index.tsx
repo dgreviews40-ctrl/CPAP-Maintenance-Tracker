@@ -6,6 +6,7 @@ import DashboardTabs from "@/components/DashboardTabs";
 import MaintenanceSchedule from "@/components/MaintenanceSchedule"; // Use MaintenanceSchedule for Overview
 import MaintenanceLog from "@/components/MaintenanceLog"; // Use MaintenanceLog for Maintenance tab
 import Inventory from "@/components/Inventory"; // Use Inventory for Inventory tab
+import MachineConfiguration from "@/components/MachineConfiguration"; // Import MachineConfiguration
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,45 +61,12 @@ const Index = () => {
               <Inventory />
             </TabsContent>
             
-            {/* Machines Tab: Links to the dedicated machine management page */}
+            {/* Machines Tab: Displays the Machine Configuration details */}
             <TabsContent value="machines">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Wrench className="h-5 w-5 mr-2" /> Machine & Part Management
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    Define custom CPAP machines and parts not listed in the default catalog.
-                  </p>
-                  <Link to="/machine-management">
-                    <Button>
-                      <Settings2 className="h-4 w-4 mr-2" /> Go to Machine Management
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
+              <MachineConfiguration />
             </TabsContent>
             
-            {/* Settings Tab: Links to the dedicated settings page */}
-            <TabsContent value="settings">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Settings Hub</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    Manage your profile, notifications, and advanced configurations.
-                  </p>
-                  <Link to="/settings">
-                    <Button>
-                      <SettingsIcon className="h-4 w-4 mr-2" /> Go to Settings
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </TabsContent>
+            {/* Note: The 'settings' tab content is removed as per request */}
           </div>
         </Tabs>
       </div>
