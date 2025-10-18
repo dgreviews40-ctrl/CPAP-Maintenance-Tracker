@@ -6,6 +6,7 @@ import NotificationCenter from "@/components/NotificationCenter";
 import FrequencySettings from "@/components/FrequencySettings";
 import PartUsageRateChart from "@/components/PartUsageRateChart"; // Import the usage chart
 import PartReplacementHistory from "@/components/PartReplacementHistory"; // Import the history component
+import InventoryStatusChart from "@/components/InventoryStatusChart"; // Import the new chart
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,12 @@ const Reports = () => {
             </div>
           </div>
           <main className="space-y-8">
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Inventory Reports</h2>
+              <Separator className="mb-4" />
+              <InventoryStatusChart />
+            </section>
             
             <section>
               <h2 className="text-2xl font-semibold mb-4">Usage & Compliance Reports</h2>
