@@ -2,9 +2,7 @@
 
 import MaintenanceTracker from "@/components/MaintenanceTracker";
 import FrequencyManagement from "@/components/FrequencyManagement";
-import InventoryAlert from "@/components/InventoryAlert";
 import DashboardSummary from "@/components/DashboardSummary";
-import InventoryStatusChart from "@/components/InventoryStatusChart";
 import PartReplacementHistory from "@/components/PartReplacementHistory";
 import NotificationCenter from "@/components/NotificationCenter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +10,8 @@ import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
 import MaintenanceForecastChart from "@/components/MaintenanceForecastChart";
 import { BarChart, Home, Sliders, Wrench } from "lucide-react";
+import UpcomingTasks from "@/components/UpcomingTasks"; // Import new component
+import LowInventoryWidget from "@/components/LowInventoryWidget"; // Import new component
 
 const Index = () => {
   return (
@@ -49,10 +49,14 @@ const Index = () => {
             <TabsContent value="dashboard" className="mt-6">
               <div className="space-y-6">
                 <DashboardSummary />
-                <InventoryAlert />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <MaintenanceForecastChart />
-                  <InventoryStatusChart />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <UpcomingTasks />
+                  </div>
+                  <div className="space-y-6">
+                    <LowInventoryWidget />
+                    <MaintenanceForecastChart />
+                  </div>
                 </div>
               </div>
             </TabsContent>
