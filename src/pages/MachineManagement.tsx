@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Wrench, Plus, Trash2, Loader2, ArrowLeft } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/useAuth";
 import { showSuccess, showError } from "@/utils/toast";
 import { useAllMachines } from "@/hooks/use-all-machines";
 import { cpapMachines } from "@/data/cpap-machines";

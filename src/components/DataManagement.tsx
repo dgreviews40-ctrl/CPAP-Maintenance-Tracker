@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/useAuth";
 import { showSuccess, showError } from "@/utils/toast";
 import { backupUserData, resetAllUserData } from "@/utils/data-management";
 import { useRQClient } from "@/hooks/use-query-client";

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Link, Loader2, Trash2, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/useAuth";
 import { showError, showSuccess } from "@/utils/toast";
 import { useCustomPartImages } from "@/hooks/use-custom-part-images";
 import { isValidUrl } from "@/lib/utils";
