@@ -17,7 +17,7 @@ import InventoryAlert from "@/components/InventoryAlert";
 import UpcomingTasks from "@/components/UpcomingTasks";
 import PartTypeBreakdownChart from "@/components/PartTypeBreakdownChart";
 import MachineHealthScore from "@/components/MachineHealthScore";
-import InventoryStatusChart from "@/components/InventoryStatusChart"; // New Import
+import MaintenanceTimelineChart from "@/components/MaintenanceTimelineChart"; // Replaced InventoryStatusChart
 
 
 const Index = () => {
@@ -66,7 +66,7 @@ const Index = () => {
                 <PartTypeBreakdownChart />
               </div>
               
-              <InventoryStatusChart /> {/* New Chart */}
+              <MaintenanceTimelineChart /> {/* New Timeline Chart */}
             </TabsContent>
             
             {/* Maintenance Tab: Contains the form and the list/tracker */}
