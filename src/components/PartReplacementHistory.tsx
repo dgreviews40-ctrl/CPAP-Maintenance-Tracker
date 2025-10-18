@@ -15,6 +15,15 @@ interface PartHistoryDisplay {
   history: MaintenanceEntry[];
 }
 
+// Helper function to safely format date strings
+const safeFormatDate = (dateStr: string | undefined, formatString: string = 'MMM dd, yyyy'): string => {
+  if (!dateStr) return "N/A";
+  // Handle timezone issues by replacing hyphens with slashes
+  const date = new Date(dateStr.replace(/-/g, "/"));
+  if (isNaN(date.getTime())) return "Invalid Date";
+  return format(date, formatString);
+};
+
 const PartReplacementHistory = () => {
   const { userParts, loading: loadingUserParts } = useUserParts();
   const { history: maintenanceHistoryMap, loading: loadingMaintenanceHistory } = useMaintenanceHistory();
@@ -80,8 +89,7 @@ const PartReplacementHistory = () => {
                     Replaced {part.partTypeLabel}
                   </h3>
                   <time className="block mb-2 text-sm font-normal leading-none text-muted-foreground">
-                    {/* Handle potential timezone issues by replacing hyphens */}
-                    {format(parseISO(entry.last_maintenance.replace(/-/g, "/")), "MMM dd, yyyy")}
+                    {safeFormatDate(entry.last_maintenance)}
                   </time>
                 </li>
               ))}

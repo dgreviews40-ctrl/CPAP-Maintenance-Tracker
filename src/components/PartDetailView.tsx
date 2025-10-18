@@ -29,6 +29,16 @@ const parseUniqueKey = (key: string) => {
   return { machineLabel, partTypeLabel, modelLabel };
 };
 
+// Helper function to safely format date strings
+const safeFormatDate = (dateStr: string | undefined, formatString: string = 'MMM dd, yyyy'): string => {
+  if (!dateStr) return "N/A";
+  // Handle timezone issues by replacing hyphens with slashes
+  const date = new Date(dateStr.replace(/-/g, "/"));
+  if (isNaN(date.getTime())) return "Invalid Date";
+  return format(date, formatString);
+};
+
+
 const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
   const { user } = useAuth();
   const { userParts, loading: loadingParts } = useUserParts();
@@ -257,10 +267,10 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {partHistory[0]?.next_maintenance ? format(parseISO(partHistory[0].next_maintenance), 'MMM dd, yyyy') : 'N/A'}
+                {safeFormatDate(partHistory[0]?.next_maintenance)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Last Maintenance: {partHistory[0]?.last_maintenance ? format(parseISO(partHistory[0].last_maintenance), 'MMM dd, yyyy') : 'N/A'}
+                Last Maintenance: {safeFormatDate(partHistory[0]?.last_maintenance)}
               </p>
               {partHistory.length === 0 && (
                 <p className="text-xs text-muted-foreground mt-2">No maintenance recorded.</p>
@@ -331,10 +341,10 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
               <TableBody>
                 {partHistory.map((entry) => (
                   <TableRow key={entry.id}>
-                    <TableCell>{format(parseISO(entry.last_maintenance), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>{format(parseISO(entry.next_maintenance), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>{safeFormatDate(entry.last_maintenance)}</TableCell>
+                    <TableCell>{safeFormatDate(entry.next_maintenance)}</TableCell>
                     <TableCell className="max-w-xs truncate text-sm text-muted-foreground">{entry.notes}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{format(parseISO(entry.created_at), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{safeFormatDate(entry.created_at)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
