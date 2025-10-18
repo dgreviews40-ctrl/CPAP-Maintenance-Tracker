@@ -1,49 +1,41 @@
 "use client";
 
-import Layout from "@/components/Layout";
-import PartReplacementHistory from "@/components/PartReplacementHistory";
-import DataManagement from "@/components/DataManagement";
+import React from 'react';
 import { Separator } from "@/components/ui/separator";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import MaintenanceSummary from '@/components/MaintenanceSummary';
+import InventorySummary from '@/components/InventorySummary';
+import UpcomingMaintenance from '@/components/UpcomingMaintenance';
+import PartReplacementHistory from '@/components/PartReplacementHistory';
 
 const Reports = () => {
   return (
-    <Layout>
-      <div className="container mx-auto p-4">
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="mb-8 flex items-center justify-between">
-            <Link to="/">
-              <Button variant="outline">
-                <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-              </Button>
-            </Link>
-            <header className="text-center flex-grow">
-              <h1 className="text-4xl font-bold">Advanced Settings</h1>
-              {/* Removed subtitle paragraph */}
-            </header>
-            <div className="w-[150px]">
-              {/* Spacer to balance the header */}
-            </div>
-          </div>
-          <main className="space-y-8">
-            
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Replacement History</h2>
-              <Separator className="mb-4" />
-              <PartReplacementHistory />
-            </section>
+    <div className="p-6 space-y-8">
+      <h1 className="text-3xl font-bold">Reports & Analytics</h1>
+      <p className="text-muted-foreground">
+        Overview of maintenance activities, inventory status, and upcoming tasks.
+      </p>
 
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Data Management</h2>
-              <Separator className="mb-4" />
-              <DataManagement />
-            </section>
-          </main>
-        </div>
-      </div>
-    </Layout>
+      {/* Maintenance Summary */}
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">Maintenance Summary</h2>
+        <Separator className="mb-4" />
+        <MaintenanceSummary />
+      </section>
+
+      {/* Inventory Summary */}
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">Inventory Summary</h2>
+        <Separator className="mb-4" />
+        <InventorySummary />
+      </section>
+
+      {/* Upcoming Maintenance */}
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">Upcoming Maintenance</h2>
+        <Separator className="mb-4" />
+        <UpcomingMaintenance />
+      </section>
+    </div>
   );
 };
 
