@@ -2,6 +2,7 @@
 
 import Layout from "@/components/Layout";
 import DataManagement from "@/components/DataManagement";
+import NotificationSettings from "@/components/NotificationSettings";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,6 @@ const Reports = () => {
             </Link>
             <header className="text-center flex-grow">
               <h1 className="text-4xl font-bold">Advanced Settings</h1>
-              {/* Removed subtitle paragraph */}
             </header>
             <div className="w-[150px]">
               {/* Spacer to balance the header */}
@@ -28,6 +28,12 @@ const Reports = () => {
           </div>
           <main className="space-y-8">
             
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Custom Frequencies & Notifications</h2>
+              <Separator className="mb-4" />
+              <NotificationSettings />
+            </section>
+
             <section>
               <h2 className="text-2xl font-semibold mb-4">Data Management</h2>
               <Separator className="mb-4" />
