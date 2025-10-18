@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { List, Wrench, CalendarWarning } from "lucide-react";
+import { List, Wrench, CalendarOff } from "lucide-react";
 import { format, isBefore, isWithinInterval, addDays, startOfDay, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -67,7 +67,7 @@ const UpcomingTasks = () => {
           </div>
         ) : tasks.length === 0 ? (
           <div className="text-center text-muted-foreground py-10">
-            <CalendarWarning className="h-8 w-8 mx-auto mb-2" />
+            <CalendarOff className="h-8 w-8 mx-auto mb-2" />
             <p>No upcoming maintenance tasks found.</p>
           </div>
         ) : (
