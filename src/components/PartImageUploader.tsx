@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import React, { useState, useRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Link, Loader2, Trash2, RotateCcw } from "lucide-react";
+import { Upload, Link as LinkIcon, Loader2, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { showError, showSuccess } from "@/utils/toast";
@@ -18,12 +18,23 @@ interface PartImageUploaderProps {
   onImageUpdated: () => void;
 }
 
-const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated }: PartImageUploaderProps) => {
+export interface PartImageUploaderRef {
+  triggerFileInput: () => void;
+}
+
+const PartImageUploader = React.forwardRef<PartImageUploaderRef, PartImageUploaderProps>(({ uniqueKey, currentImageUrl, onImageUpdated }, ref) => {
   const { user } = useAuth();
   const { updateImage } = useCustomPartImages();
   const [isUploading, setIsUploading] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Expose the file input trigger function via ref
+  useImperativeHandle(ref, () => ({
+    triggerFileInput: () => {
+      fileInputRef.current?.click();
+    },
+  }));
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!user) {
@@ -133,7 +144,7 @@ const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated }: PartI
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="file-upload">Upload Image File (JPG, PNG)</Label>
+          <Label htmlFor="file-upload-button">Upload Image File (JPG, PNG)</Label>
           <Input 
             id="file-upload" 
             type="file" 
@@ -141,7 +152,17 @@ const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated }: PartI
             onChange={handleFileUpload}
             ref={fileInputRef}
             disabled={isUploading}
+            className="hidden" // Hide the default input
           />
+          <Button 
+            id="file-upload-button"
+            onClick={() => fileInputRef.current?.click()} 
+            variant="outline" 
+            className="w-full"
+            disabled={isUploading}
+          >
+            <Upload className="h-4 w-4 mr-2" /> Select File to Upload
+          </Button>
         </div>
         
         <div className="flex items-center space-x-2">
@@ -161,7 +182,7 @@ const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated }: PartI
             disabled={!urlInput || !isValidUrl(urlInput) || isUploading}
             className="mt-6"
           >
-            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link className="h-4 w-4" />}
+            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
           </Button>
         </div>
         
@@ -173,6 +194,6 @@ const PartImageUploader = ({ uniqueKey, currentImageUrl, onImageUpdated }: PartI
       </CardContent>
     </Card>
   );
-};
+});
 
 export default PartImageUploader;

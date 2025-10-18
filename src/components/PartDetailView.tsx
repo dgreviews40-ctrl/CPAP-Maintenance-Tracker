@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Package, Calendar, Wrench, AlertTriangle, Info, Image as ImageIcon } from "lucide-react";
@@ -11,9 +12,9 @@ import { format, parseISO } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import PartImageUploader from "./PartImageUploader";
+import PartImageUploader, { PartImageUploaderRef } from "./PartImageUploader";
 import { useRQClient } from "@/hooks/use-query-client";
-import { useAllMachines } from "@/hooks/use-all-machines"; // Import useAllMachines
+import { useAllMachines } from "@/hooks/use-all-machines";
 
 interface PartDetailViewProps {
   uniqueKey: string;
@@ -27,10 +28,12 @@ const parseUniqueKey = (key: string) => {
 
 const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
   const { userParts, loading: loadingParts } = useUserParts();
-  const { allMachines, loading: loadingAllMachines } = useAllMachines(); // Get all machines
+  const { allMachines, loading: loadingAllMachines } = useAllMachines();
   const { frequencies, loading: loadingFrequencies } = useCustomFrequencies();
   const { history, loading: loadingHistory } = useMaintenanceHistory();
   const queryClient = useRQClient();
+  
+  const uploaderRef = useRef<PartImageUploaderRef>(null); // Ref for the uploader component
 
   const loading = loadingParts || loadingFrequencies || loadingHistory || loadingAllMachines;
 
@@ -111,7 +114,11 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
               <CardTitle className="text-lg">Part Visual</CardTitle>
             </CardHeader>
             <CardContent>
-              <AspectRatio ratio={1 / 1} className="bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+              <AspectRatio 
+                ratio={1 / 1} 
+                className="bg-muted rounded-lg overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => uploaderRef.current?.triggerFileInput()} // Trigger file input on click
+              >
                 {partDetails.imageUrl ? (
                   <img 
                     src={partDetails.imageUrl} 
@@ -121,15 +128,16 @@ const PartDetailView = ({ uniqueKey }: PartDetailViewProps) => {
                 ) : (
                   <div className="text-muted-foreground flex flex-col items-center">
                     <ImageIcon className="h-8 w-8 mb-2" />
-                    <p>No Image Available</p>
+                    <p className="text-center">Click to Upload Image</p>
                   </div>
                 )}
               </AspectRatio>
             </CardContent>
           </Card>
           
-          {/* Image Uploader */}
+          {/* Image Uploader (Pass ref here) */}
           <PartImageUploader 
+            ref={uploaderRef} // Pass the ref
             uniqueKey={uniqueKey} 
             currentImageUrl={partDetails.imageUrl}
             onImageUpdated={handleImageUpdated}
