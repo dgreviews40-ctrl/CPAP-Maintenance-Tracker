@@ -5,9 +5,8 @@ WORKDIR /app
 
 # Copy package.json and install dependencies
 COPY package.json ./
-COPY package-lock.json ./
 # Install dependencies and build the project
-RUN npm ci
+RUN npm install
 RUN npm run build
 
 # Stage 2: Create the production image using Nginx
