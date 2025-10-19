@@ -6,6 +6,7 @@ services:
   # -------------------------------------------------
   frontend:
     build: .
+    image: cpap-tracker-frontend:latest # Explicitly define the image name and tag
     container_name: cpap-frontend
     ports:
       - "8080:80"               # Expose on host port 8080
