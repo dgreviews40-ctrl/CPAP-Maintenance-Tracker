@@ -1,12 +1,13 @@
 node_modules
 dist
-build
-.vscode
 .git
 .gitignore
 Dockerfile
 docker-compose.yml
 README.md
+.vscode
+.idea
 *.log
 *.md
-*.tsbuildinfo
+*.yml
+*.yaml
