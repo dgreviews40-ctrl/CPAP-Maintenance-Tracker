@@ -5,15 +5,19 @@ FROM node:20-slim AS builder
 # Set working directory
 WORKDIR /app
 
-# Install only production dependencies first (helps with caching)
+# Install **all** dependencies (dev + prod) – needed for the Vite build
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 # Copy the rest of the source code
 COPY . .
 
 # Build the app for production
 RUN npm run build
+
+# Remove dev‑only packages to keep the layer small (optional but recommended)
+# This step runs after the build, so the compiled assets are already present.
+RUN npm prune --production
 
 # ---------- Stage 2: Serve with Nginx ----------
 FROM nginx:alpine
