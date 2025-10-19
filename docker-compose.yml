@@ -14,6 +14,13 @@ services:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
     restart: unless-stopped
+    labels:
+      # CasaOS/Portainer/Standard Docker Labels for UI
+      - "casaos.title=CPAP Maintenance Tracker"
+      - "casaos.icon=https://raw.githubusercontent.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/main/public/favicon.ico" # Placeholder icon URL
+      - "casaos.webui=http://$$HOSTNAME:8080"
+      - "com.docker.compose.project.name=cpap-tracker"
+      - "com.docker.compose.service=frontend"
 
   # -------------------------------------------------
   # (Optional) Supabase local stack – useful for dev
