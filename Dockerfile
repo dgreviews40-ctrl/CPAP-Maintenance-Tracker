@@ -3,10 +3,17 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package.json and install dependencies
+# Copy package.json and lock file
 COPY package.json ./
-# Install dependencies and build the project
-RUN npm install
+COPY package-lock.json ./
+
+# Install dependencies using npm ci for reproducible builds
+RUN npm ci
+
+# Copy the rest of the source code
+COPY . .
+
+# Build the project
 RUN npm run build
 
 # Stage 2: Create the production image using Nginx
