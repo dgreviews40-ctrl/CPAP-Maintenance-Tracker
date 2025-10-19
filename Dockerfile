@@ -5,14 +5,11 @@ WORKDIR /app
 
 # Copy package.json and install dependencies
 COPY package.json ./
-# If package-lock.json exists, copy it too for better caching/reproducibility
-# We use npm install which is more forgiving if it's missing.
-# COPY package-lock.json ./ 
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the source code (including src/, public/, etc.)
+# Copy the rest of the source code (including src/, public/, index.html, etc.)
 COPY . .
 
 # Build the project
