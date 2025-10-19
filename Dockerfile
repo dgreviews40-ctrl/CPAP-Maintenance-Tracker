@@ -1,38 +1,36 @@
-# ---------- Stage 1: Build the React app ----------
-# Use an official Node image (slim) for a small build environment
-FROM node:20-slim AS builder
+# Use an official Node.js runtime as a parent image
+FROM node:18-alpine AS build
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy only the package manifests first (helps Docker cache layers)
+# Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
-# Install **all** dependencies (dev + prod) – required for the Vite build.
-# `npm install` works even when a package‑lock.json is absent.
+# Install app dependencies
 RUN npm install
 
-# Copy the rest of the source code
+# Copy the rest of the application source code
 COPY . .
 
-# Build the app for production (Vite)
+# Build the app
 RUN npm run build
 
-# Remove dev‑only packages to keep the final layer small.
-# This runs after the build, so the compiled assets are already present.
+# Prune development dependencies
 RUN npm prune --production
 
-# ---------- Stage 2: Serve with Nginx ----------
-FROM nginx:alpine
+# Use a smaller, more secure base image for the final image
+FROM node:18-alpine
 
-# Remove default nginx static assets
-RUN rm -rf /usr/share/nginx/html/*
+WORKDIR /app
 
-# Copy built assets from the builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy only the necessary files from the build stage
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/dist ./dist
 
-# Expose the default HTTP port
-EXPOSE 80
+# Expose the port the app runs on
+EXPOSE 3000
 
-# Use the default nginx command
-CMD ["nginx", "-g", "daemon off;"]
+# The command to run the application
+CMD ["node", "dist/main.js"]

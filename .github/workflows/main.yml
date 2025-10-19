@@ -35,8 +35,5 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/cpap-tracker:latest
           platforms: linux/arm64
-          # Temporarily disable cache to force a rebuild with the new Dockerfile instructions.
-          # You can remove the `no-cache` line after this build succeeds.
-          no-cache: true
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/cpap-tracker:cache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/cpap-tracker:cache,mode=max
