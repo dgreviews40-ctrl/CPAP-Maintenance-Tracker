@@ -14,6 +14,7 @@ services:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
     restart: unless-stopped
+    entrypoint: ["nginx", "-g", "daemon off;"] # Bypass the default entrypoint that runs envsubst
     labels:
       # CasaOS/Portainer/Standard Docker Labels for UI
       - "casaos.title=CPAP Maintenance Tracker"
