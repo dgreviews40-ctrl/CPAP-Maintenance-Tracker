@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  # -------------------------------------------------
+  # Front‑end – the image we just built
+  # -------------------------------------------------
+  frontend:
+    build: .
+    container_name: cpap-frontend
+    ports:
+      - "8080:80"               # Expose on host port 8080
+    environment:
+      # 👉 Pass your Supabase credentials here (or use a .env file)
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    restart: unless-stopped
+
+  # -------------------------------------------------
+  # (Optional) Supabase local stack – useful for dev
+  # -------------------------------------------------
+  # Uncomment the block below if you want to run Supabase locally.
+  # You’ll need Docker images that support arm64 (the official ones do).
+  #
+  # supabase:
+  #   image: supabase/postgres:15.3.0
+  #   container_name: supabase-db
+  #   environment:
+  #     POSTGRES_PASSWORD: supabase
+  #     POSTGRES_DB: postgres
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - supabase-data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #
+  #   # Add other Supabase services (auth, storage, realtime) as needed.
+  #   # See https://github.com/supabase/supabase/tree/master/docker for the full stack.
+
+volumes:
+  supabase-data:
