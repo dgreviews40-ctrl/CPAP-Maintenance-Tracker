@@ -35,5 +35,6 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/cpap-tracker:latest
           platforms: linux/arm64
+          no-cache: true
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/cpap-tracker:cache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/cpap-tracker:cache,mode=max
