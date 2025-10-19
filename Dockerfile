@@ -5,18 +5,21 @@ FROM node:20-slim AS builder
 # Set working directory
 WORKDIR /app
 
-# Install **all** dependencies (dev + prod) – needed for the Vite build
+# Copy only the package manifests first (helps Docker cache layers)
 COPY package*.json ./
-RUN npm ci
+
+# Install **all** dependencies (dev + prod) – required for the Vite build.
+# `npm install` works even when a package‑lock.json is absent.
+RUN npm install
 
 # Copy the rest of the source code
 COPY . .
 
-# Build the app for production
+# Build the app for production (Vite)
 RUN npm run build
 
-# Remove dev‑only packages to keep the layer small (optional but recommended)
-# This step runs after the build, so the compiled assets are already present.
+# Remove dev‑only packages to keep the final layer small.
+# This runs after the build, so the compiled assets are already present.
 RUN npm prune --production
 
 # ---------- Stage 2: Serve with Nginx ----------
