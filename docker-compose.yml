@@ -5,8 +5,7 @@ services:
   # Front‑end – the image we just built
   # -------------------------------------------------
   frontend:
-    # Use the pre-built image from GitHub Container Registry (GHCR)
-    image: ghcr.io/dgreviews40-ctrl/cpap-tracker:latest 
+    build: .
     container_name: cpap-frontend
     ports:
       - "8080:80"               # Expose on host port 8080

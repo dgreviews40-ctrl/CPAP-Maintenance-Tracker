@@ -1,30 +1,26 @@
 # Stage 1: Build the application
-FROM node:20-alpine AS builder
+FROM node:20-slim as builder
 
 WORKDIR /app
 
-# Copy package.json and install dependencies
-COPY package.json ./
-
-# Install dependencies
+# Copy package files and install dependencies
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy the rest of the source code (including src/, public/, index.html, etc.)
+# Copy source code and build
 COPY . .
-
-# Build the project
 RUN npm run build
 
-# Stage 2: Create the production image using Nginx
-FROM nginx:alpine
+# Stage 2: Serve the application using Nginx
+FROM nginx:alpine as final
 
-# Copy the built assets from the builder stage to the Nginx public directory
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy a custom Nginx configuration to handle routing (e.g., for React Router)
+# Copy the custom Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose the default Nginx port
+# Copy the built application files from the builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose port 80 (mapped to 8080 in docker-compose)
 EXPOSE 80
 
 # Start Nginx
