@@ -1,29 +1,26 @@
 # Stage 1: Build the application
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package.json and install dependencies
 COPY package.json ./
-# Use npm install and omit dev dependencies directly
-RUN npm install --omit=dev
-
-# Copy the rest of the source code
-COPY . .
-
-# Build the project
+COPY package-lock.json ./
+# Install dependencies and build the project
+RUN npm ci
 RUN npm run build
 
-# Stage 2: Create the production image
-FROM node:18-alpine
+# Stage 2: Create the production image using Nginx
+FROM nginx:alpine
 
-WORKDIR /app
+# Copy the built assets from the builder stage to the Nginx public directory
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy built assets and production dependencies
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# Copy a custom Nginx configuration to handle routing (e.g., for React Router)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 3000
+# Expose the default Nginx port
+EXPOSE 80
 
-CMD ["node", "dist/main.js"]
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
