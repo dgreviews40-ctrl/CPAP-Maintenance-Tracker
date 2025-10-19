@@ -3,14 +3,16 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package.json and lock file
+# Copy package.json and install dependencies
 COPY package.json ./
-COPY package-lock.json ./
+# If package-lock.json exists, copy it too for better caching/reproducibility
+# We use npm install which is more forgiving if it's missing.
+# COPY package-lock.json ./ 
 
-# Install dependencies using npm ci for reproducible builds
-RUN npm ci
+# Install dependencies
+RUN npm install
 
-# Copy the rest of the source code
+# Copy the rest of the source code (including src/, public/, etc.)
 COPY . .
 
 # Build the project
