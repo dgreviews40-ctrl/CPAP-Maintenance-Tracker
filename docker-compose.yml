@@ -5,7 +5,8 @@ services:
   # Front‑end – the image we just built
   # -------------------------------------------------
   frontend:
-    image: ghcr.io/dgreviews40-ctrl/cpap-tracker:latest # Explicitly use the GHCR image
+    build: . # Explicitly define the build context
+    image: ghcr.io/dgreviews40-ctrl/cpap-tracker:latest # Tag for the built image
     container_name: cpap-frontend
     ports:
       - "8080:80"               # Expose on host port 8080
@@ -14,7 +15,6 @@ services:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
     restart: unless-stopped
-    # Removed custom entrypoint override
     labels:
       # CasaOS/Portainer/Standard Docker Labels for UI
       - "casaos.title=CPAP Maintenance Tracker"
