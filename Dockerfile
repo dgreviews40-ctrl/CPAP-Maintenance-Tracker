@@ -4,7 +4,8 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package.json package-lock.json ./
+# Use package*.json to handle cases where package-lock.json might be missing
+COPY package*.json ./
 RUN npm install
 
 # Copy source code and build
