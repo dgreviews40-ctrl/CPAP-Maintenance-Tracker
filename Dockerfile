@@ -1,11 +1,10 @@
 # Stage 1: Build the React application
-FROM node:20-slim AS builder
+FROM node:20-slim as builder
 
 WORKDIR /app
 
 # Copy package files and install dependencies
-# Use package*.json to handle cases where package-lock.json might be missing
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm install
 
 # Copy source code and build
@@ -13,14 +12,20 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Serve the application using Nginx
-FROM nginx:alpine
+FROM nginx:alpine as runner
 
-# Copy the custom Nginx configuration
+# Copy the custom nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy the built application files
+# Copy the built application files from the builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# The default Nginx entrypoint will run envsubst on /etc/nginx/conf.d/default.conf.
-# Since we escaped $uri as $$uri in nginx.conf, envsubst will correctly resolve it to $uri.
-# We rely on the default ENTRYPOINT and CMD of nginx:alpine.
+# Set correct permissions and ownership for Nginx user
+RUN chown -R nginx:nginx /usr/share/nginx/html
+RUN chmod -R 755 /usr/share/nginx/html
+
+# Expose port 80 (default Nginx port)
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
