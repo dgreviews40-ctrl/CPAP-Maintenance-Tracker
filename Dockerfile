@@ -26,6 +26,3 @@ RUN chmod -R 755 /usr/share/nginx/html
 
 # Expose port 80 (default Nginx port)
 EXPOSE 80
-
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
