@@ -1,0 +1,22 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with rounded corners -->
+  <rect width="64" height="64" rx="12" fill="#0079FF"/>
+  
+  <!-- CPAP Machine Icon -->
+  <rect x="16" y="20" width="32" height="20" rx="4" fill="white"/>
+  
+  <!-- Air flow lines -->
+  <path d="M12 32 L16 32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <path d="M52 32 L56 32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Mask/hose connection -->
+  <circle cx="32" cy="16" r="3" fill="white"/>
+  <path d="M32 16 L32 20" stroke="white" stroke-width="2"/>
+  
+  <!-- Maintenance wrench icon -->
+  <path d="M48 48 L52 44 L56 48 L52 52 Z" fill="white"/>
+  <circle cx="52" cy="50" r="2" fill="#0079FF"/>
+  
+  <!-- Status indicator -->
+  <circle cx="48" cy="16" r="2" fill="#00FF00"/>
+</svg>

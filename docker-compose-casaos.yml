@@ -17,7 +17,7 @@ services:
     labels:
       # CasaOS/Portainer/Standard Docker Labels for UI
       - "casaos.title=CPAP Maintenance Tracker"
-      - "casaos.icon=https://raw.githubusercontent.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/main/public/favicon.ico"
+      - "casaos.icon=https://raw.githubusercontent.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/main/public/icon.svg"
       - "casaos.webui=http://$$HOSTNAME:8080"
       - "com.docker.compose.project.name=cpap-tracker"
       - "com.docker.compose.service=frontend"
