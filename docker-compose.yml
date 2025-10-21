@@ -5,7 +5,6 @@ services:
   # Front‑end – the image we just built
   # -------------------------------------------------
   frontend:
-    build: . # Explicitly define the build context
     image: ghcr.io/dgreviews40-ctrl/cpap-tracker:latest # Tag for the built image
     container_name: cpap-frontend
     ports:
