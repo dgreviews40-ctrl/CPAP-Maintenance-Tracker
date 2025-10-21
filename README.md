@@ -65,13 +65,34 @@ Manage your spare parts inventory with real-time stock levels, reorder alerts, a
 
 ## 🚀 Quick Start
 
-### Option 1: Docker (Recommended)
+### ⚠️ **Important: Supabase Setup Required**
+
+**Each user needs their own Supabase project** for data privacy and security. You cannot share Supabase credentials between users.
+
+### Step 1: Create Your Supabase Project
+
+1. **Go to [supabase.com](https://supabase.com)**
+2. **Sign up for a free account** (no credit card required)
+3. **Create a new project**:
+   - Choose your organization
+   - Enter project name (e.g., "My CPAP Tracker")
+   - Set a strong database password
+   - Choose a region close to you
+4. **Wait for project creation** (takes 1-2 minutes)
+5. **Get your credentials**:
+   - Go to **Settings → API**
+   - Copy **Project URL** (e.g., `https://xyz.supabase.co`)
+   - Copy **anon public key** (starts with `eyJ...`)
+
+### Step 2: Deploy the Application
+
+#### Option 1: Docker (Recommended)
 
 ```bash
 # Pull the latest image
 docker pull ghcr.io/dgreviews40-ctrl/cpap-tracker:latest
 
-# Run with your Supabase credentials
+# Run with YOUR Supabase credentials
 docker run -d \
   --name cpap-tracker \
   -p 8080:80 \
@@ -319,6 +340,41 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **shadcn/ui** - Beautiful UI components
 - **React Team** - Amazing framework
 - **Open Source Community** - For all the great tools
+
+## ❓ Frequently Asked Questions
+
+### **Q: Do I need to create my own Supabase account?**
+**A: Yes!** Each user needs their own Supabase project for data privacy and security. You cannot share Supabase credentials between users.
+
+### **Q: Is Supabase free?**
+**A: Yes!** Supabase offers a generous free tier:
+- **500MB database storage**
+- **2GB bandwidth per month**
+- **50,000 monthly active users**
+- **No credit card required**
+
+### **Q: Can I use someone else's Supabase project?**
+**A: No!** This would compromise data security and privacy. Each user must have their own project.
+
+### **Q: What if I don't want to use Supabase?**
+**A: The app requires Supabase for:**
+- User authentication
+- Data storage
+- Real-time sync
+- Multi-device access
+
+### **Q: Is my data safe with Supabase?**
+**A: Yes!** Supabase provides:
+- **Row Level Security (RLS)** - Your data is isolated
+- **Encrypted connections** - All data is encrypted in transit
+- **GDPR compliant** - Meets privacy regulations
+- **Backup and recovery** - Your data is backed up
+
+### **Q: Can I export my data?**
+**A: Yes!** You can:
+- Export data as CSV files from the app
+- Access your data directly from Supabase dashboard
+- Download your entire database if needed
 
 ## 📞 Support
 
