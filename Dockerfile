@@ -14,8 +14,12 @@ RUN npm run build
 # Stage 2: Serve the application using Nginx
 FROM nginx:alpine as runner
 
-# Copy the custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Remove the default Nginx config to avoid conflicts
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy the custom nginx configuration to the main conf directory
+# This placement should avoid envsubst processing
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy the built application files from the builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
