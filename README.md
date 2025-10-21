@@ -1,190 +1,311 @@
 # 🛠️ CPAP Maintenance Tracker
 
-## 🧩 Overview
-A web-based application designed to streamline CPAP machine maintenance, part tracking, and inventory management. Built with modern web technologies and integrated with Supabase for authentication and backend services.
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker)
+[![React](https://img.shields.io/badge/React-18.3.1-blue?logo=react)](https://reactjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-green?logo=supabase)](https://supabase.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 🧱 Tech Stack
-- **Frontend**: React.js (with Tailwind CSS for styling)  
-- **Backend**: Supabase (authentication, real‑time data, storage)  
-- **Database**: PostgreSQL (UUID‑based user identification)  
-- **Authentication**: Supabase Auth (email/password flow)  
-- **Deployment**: GitHub Pages / Vercel / Netlify (static) **or** Docker (ARM64 & x86)
+A comprehensive web application for tracking CPAP machine maintenance, managing parts inventory, and scheduling replacements. Built with modern technologies and designed for both individual users and healthcare providers.
 
-## 📁 Key Components
-### 1. User Authentication
-- **Sign Up / Log In** – powered by Supabase Auth.  
-- **Profile Management** – user profiles stored in the `profiles` table (UUID primary key).
+## ✨ Features
 
-### 2. Maintenance Tracking
-- **Log Entries** – record service dates, part replacements, and next‑due dates.  
-- **Automated Scheduling** – calculates next maintenance based on part frequency (default + custom).  
-- **Custom Parts** – define custom CPAP models and parts not in the default catalog.
+### 🔐 **User Management**
+- **Secure Authentication** - Supabase-powered login/signup
+- **User Profiles** - Personalized settings and preferences
+- **Multi-device Sync** - Access from any device, anywhere
 
-### 3. Inventory System
-- **Part Tracking** – monitor stock levels, set reorder thresholds, and log restocks.  
-- **Amazon Integration** – generate Amazon search links for parts using a tracking ID.
+### 🔧 **Maintenance Tracking**
+- **Automated Scheduling** - Smart reminders based on part lifecycles
+- **Maintenance History** - Complete log of all service activities
+- **Custom Parts** - Add support for any CPAP machine or part
+- **Maintenance Forms** - Easy-to-use forms for logging activities
 
-### 4. Analytics Dashboard
-- **Trends** – visualise maintenance history, part usage, and inventory status.  
-- **Reports** – export logs as CSV files for external analysis.
+### 📦 **Inventory Management**
+- **Stock Monitoring** - Track part quantities and usage
+- **Reorder Alerts** - Get notified when parts need restocking
+- **Amazon Integration** - Direct links to purchase replacement parts
+- **Inventory Analytics** - Usage patterns and cost tracking
 
----
+### 📊 **Analytics & Reporting**
+- **Dashboard Overview** - Key metrics and upcoming tasks
+- **Usage Analytics** - Part replacement patterns and trends
+- **Export Capabilities** - CSV exports for external analysis
+- **Health Scoring** - Machine condition assessment
 
-## 🐳 Docker Support (ARM64 & x86)
+### 🏥 **Supported Machines**
+- **ResMed** - AirSense 10/11, AirMini
+- **Philips Respironics** - DreamStation, DreamStation 2
+- **Breas** - Z2 Auto Travel CPAP
+- **Fisher & Paykel** - SleepStyle
+- **3B Medical** - Luna II
+- **Custom Machines** - Add your own machine definitions
 
-### Why Docker?
-- **Portability** – run the app on any machine (Raspberry Pi, Jetson, cloud VM, etc.) without installing Node, Vite, or other build tools.  
-- **Consistency** – the same environment is used locally, in CI, and in production.  
-- **Lightweight Runtime** – final image is ~30 MB (nginx + compiled static assets).
+## 🚀 Quick Start
 
-### What’s Included
-- **Multi‑stage `Dockerfile`** – builds the React app with `node:20-slim` and serves it with `nginx:alpine`.  
-- **`.dockerignore`** – keeps the build context small.  
-- **`docker-compose.yml`** – convenient local development (exposes port 8080, injects Supabase env vars, optional local Supabase stack).  
-- **GitHub Actions workflow** – automatically builds a **linux/arm64** image on every push to `main` and pushes it to GitHub Container Registry (GHCR). You can switch to Docker Hub by editing the workflow tags.
-
-### Quick Local Test (on an ARM64 board or any machine)
+### Option 1: Docker (Recommended)
 
 ```bash
-# Clone the repo (if you haven't already)
-git clone https://github.com/your‑user/CPAP-Maintenance-Tracker.git
+# Pull the latest image
+docker pull ghcr.io/dgreviews40-ctrl/cpap-tracker:latest
+
+# Run with your Supabase credentials
+docker run -d \
+  --name cpap-tracker \
+  -p 8080:80 \
+  -e VITE_SUPABASE_URL=https://your-project.supabase.co \
+  -e VITE_SUPABASE_ANON_KEY=your-anon-key \
+  ghcr.io/dgreviews40-ctrl/cpap-tracker:latest
+```
+
+### Option 2: Docker Compose
+
+```yaml
+version: "3.9"
+services:
+  cpap-tracker:
+    image: ghcr.io/dgreviews40-ctrl/cpap-tracker:latest
+    container_name: cpap-tracker
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_SUPABASE_URL=https://your-project.supabase.co
+      - VITE_SUPABASE_ANON_KEY=your-anon-key
+    restart: unless-stopped
+```
+
+### Option 3: CasaOS Deployment
+
+1. **Docker Image**: `ghcr.io/dgreviews40-ctrl/cpap-tracker:latest`
+2. **Tag**: `latest`
+3. **Port**: `8080:80`
+4. **Environment Variables**:
+   - `VITE_SUPABASE_URL` = Your Supabase URL
+   - `VITE_SUPABASE_ANON_KEY` = Your Supabase anon key
+
+## 🛠️ Prerequisites
+
+### Required
+- **Supabase Account** - [Sign up here](https://supabase.com/)
+- **Docker** (for containerized deployment)
+- **Modern Web Browser** (Chrome, Firefox, Safari, Edge)
+
+### Optional
+- **Node.js 20+** (for local development)
+- **pnpm** (for package management)
+
+## 📋 Setup Instructions
+
+### 1. Create Supabase Project
+
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Click "New Project"
+3. Choose your organization and enter project details
+4. Wait for the project to be created
+5. Go to **Settings → API** and copy:
+   - **Project URL** (e.g., `https://xyz.supabase.co`)
+   - **anon public key** (starts with `eyJ...`)
+
+### 2. Deploy the Application
+
+#### Using Docker (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker.git
 cd CPAP-Maintenance-Tracker
 
-# Create a .env file next to docker-compose.yml with your Supabase credentials
+# Create environment file
 cat > .env <<EOF
-VITE_SUPABASE_URL=https://your‑project.supabase.co
-VITE_SUPABASE_ANON_KEY=your‑anon‑key
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 EOF
 
-# Build and start the container
-docker compose up -d --build   # (or `docker-compose up -d --build`)
-
-# Open a browser and go to:
-# http://<your‑device‑ip>:8080
+# Start with Docker Compose
+docker-compose up -d
 ```
 
-### Production Deployment (ARM64)
+#### Using CasaOS
+1. Open CasaOS interface
+2. Go to "Apps" → "Install App"
+3. Use the Docker Compose configuration above
+4. Set your environment variables
+5. Click "Install"
 
-1. **Push to GitHub** – the CI workflow builds the image and pushes it to `ghcr.io/<your‑org>/cpap-tracker:latest`.  
-2. **Run on any ARM64 host**:
+### 3. Access the Application
 
-   ```bash
-   docker run -d \
-     -p 80:80 \
-     -e VITE_SUPABASE_URL=https://your‑project.supabase.co \
-     -e VITE_SUPABASE_ANON_KEY=your‑anon‑key \
-     ghcr.io/<your‑org>/cpap-tracker:latest
-   ```
+- **URL**: `http://your-server-ip:8080`
+- **First Time**: Create an account using the signup form
+- **Login**: Use your credentials to access the dashboard
 
-   The app will be reachable at `http://<host‑ip>`.
+## 🏗️ Architecture
 
-### Switching to Docker Hub (optional)
+### Frontend
+- **React 18** - Modern React with hooks and functional components
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first CSS framework
+- **shadcn/ui** - Beautiful, accessible UI components
+- **React Query** - Server state management and caching
+- **React Router** - Client-side routing
 
-Edit `.github/workflows/docker.yml`:
+### Backend
+- **Supabase** - Backend-as-a-Service
+- **PostgreSQL** - Relational database
+- **Row Level Security** - User data isolation
+- **Real-time Subscriptions** - Live data updates
+- **Authentication** - Secure user management
 
-```yaml
-tags: yourdockerhubuser/cpap-tracker:latest
-```
+### Deployment
+- **Docker** - Containerized deployment
+- **Nginx** - Web server and reverse proxy
+- **GitHub Actions** - CI/CD pipeline
+- **GitHub Container Registry** - Docker image hosting
 
-Add a Docker Hub login step (replace the GHCR login with Docker Hub credentials).
+## 📊 Database Schema
 
----
+The application automatically creates these tables in your Supabase project:
 
-## ⚙️ Environment Variables
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `profiles` | User information | `first_name`, `last_name`, `avatar_url` |
+| `maintenance_entries` | Maintenance logs | `machine`, `last_maintenance`, `next_maintenance` |
+| `part_inventory` | Stock management | `part_key`, `quantity`, `reorder_threshold` |
+| `custom_frequencies` | Custom schedules | `part_key`, `frequency_days` |
+| `user_machines` | Custom parts | `machine_label`, `part_type_label`, `part_model_label` |
+| `part_images` | Part photos | `part_key`, `image_url` |
 
-| Variable | Description | Required? |
-|----------|-------------|-----------|
-| `VITE_SUPABASE_URL` | Supabase project URL (e.g., `https://xyz.supabase.co`) | ✅ |
-| `VITE_SUPABASE_ANON_KEY` | Public anon key for client‑side access | ✅ |
-| `PORT` (optional) | Port for the container (defaults to `80` in the Dockerfile) | — |
-| `NODE_ENV` (optional) | `development` or `production` – influences Vite builds | — |
+## 🔧 Development
 
-**Never** commit these values to the repository. Supply them at runtime (Docker `-e` flags, `.env` for `docker‑compose`, or GitHub Actions secrets).
-
----
-
-## 💻 Local Development (npm)
+### Local Development Setup
 
 ```bash
+# Clone the repository
+git clone https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker.git
+cd CPAP-Maintenance-Tracker
+
 # Install dependencies
-npm install
+pnpm install
 
-# Run the dev server (Vite)
-npm run dev          # http://localhost:8080
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your Supabase credentials
 
-# Build for production
-npm run build
-
-# Preview the production build locally
-npm run preview
+# Start development server
+pnpm dev
 ```
 
-The project uses **React Router** (`src/App.tsx`) and **React Query** for data fetching/caching. All UI components are from the **shadcn/ui** library.
+### Available Scripts
 
----
-
-## 🤖 CI / CD (GitHub Actions)
-
-- **Workflow**: `.github/workflows/docker.yml`  
-- **Triggers**: pushes to `main` and manual dispatch.  
-- **Steps**: checkout → set up Buildx → login to GHCR → build multi‑arch image (`linux/arm64` by default) → push.  
-- **Cache**: uses registry‑based cache to speed up subsequent builds.  
-
-If you want to run tests or linting in the pipeline, extend the workflow with additional steps:
-
-```yaml
-- name: Install dependencies
-  run: npm ci
-
-- name: Lint
-  run: npm run lint
-
-- name: Run tests
-  run: npm test
+```bash
+pnpm dev          # Start development server
+pnpm build        # Build for production
+pnpm preview      # Preview production build
+pnpm lint         # Run ESLint
 ```
 
----
+### Project Structure
 
-## 🛠️ Supabase Setup
+```
+src/
+├── components/          # React components
+│   ├── ui/            # shadcn/ui components
+│   └── ...            # Feature components
+├── hooks/             # Custom React hooks
+├── pages/             # Route components
+├── utils/             # Utility functions
+├── types/             # TypeScript type definitions
+└── integrations/      # External service integrations
+```
 
-1. **Create a Supabase project** and note the `URL` and `anon key`.  
-2. **Enable Row‑Level Security (RLS)** on all tables (the project already includes the required policies).  
-3. **Tables** (auto‑created by the app):
-   - `profiles` – user profile data (`first_name`, `last_name`, `avatar_url`).  
-   - `maintenance_entries` – logs of part replacements.  
-   - `part_inventory` – stock levels, reorder thresholds, last restock date.  
-   - `custom_frequencies` – per‑part override of default maintenance intervals.  
-   - `user_machines` – custom machine/part definitions added by the user.  
-   - `part_images` – optional custom image URLs for parts.  
+## 🐳 Docker Details
 
-All tables have RLS policies that restrict access to the owning user (`auth.uid() = user_id` or `id`). No additional configuration is required unless you add new tables.
+### Multi-Architecture Support
+- **linux/amd64** - Intel/AMD processors
+- **linux/arm64** - ARM processors (Raspberry Pi, Apple Silicon)
 
----
+### Image Size
+- **Base Image**: `nginx:alpine` (~16MB)
+- **Final Image**: ~30MB (includes React app)
+- **Startup Time**: < 5 seconds
+
+### Environment Variables
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `VITE_SUPABASE_URL` | Supabase project URL | ✅ | - |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key | ✅ | - |
+| `PORT` | Container port | ❌ | 80 |
+
+## 🔒 Security
+
+### Data Protection
+- **Row Level Security (RLS)** - User data isolation
+- **JWT Authentication** - Secure token-based auth
+- **HTTPS Only** - Encrypted data transmission
+- **No Sensitive Data** - Only public keys in environment
+
+### Best Practices
+- Never commit environment variables
+- Use strong passwords for Supabase
+- Regularly update dependencies
+- Monitor access logs
 
 ## 🐞 Troubleshooting
 
-| Symptom | Likely Cause | Fix |
-|---------|--------------|-----|
-| **App fails to load** (blank page) | Missing Supabase env vars | Ensure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in the environment where the app runs (Docker `-e`, `.env`, or CI). |
-| **404 on `/part/:key`** | Part key not found in any machine definition | Verify the part exists in either the default `cpapMachines` data or in `user_machines`. |
-| **Inventory quantity never updates** | Query cache not invalidated | The UI uses React Query; after a mutation the code calls `queryClient.invalidateQueries`. If you edited the code, make sure those calls remain. |
-| **Docker build hangs** | Network connectivity to npm registry | Docker builds run in a clean environment; ensure the host can reach `registry.npmjs.org`. |
-| **GitHub Actions fails to push image** | Missing `write:packages` permission | Add a personal access token with `write:packages` scope as a secret (`GHCR_TOKEN`) and reference it in the workflow, or rely on the default `GITHUB_TOKEN` (which already has the permission for the same repo). |
-| **Supabase RLS error** | Policies not enabled on a new table | Run `ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;` and add appropriate policies (the repo already contains the needed ones). |
+### Common Issues
 
----
+| Issue | Solution |
+|-------|----------|
+| **App won't load** | Check environment variables are set correctly |
+| **Login fails** | Verify Supabase URL and anon key |
+| **Data not syncing** | Check internet connection and Supabase status |
+| **Docker build fails** | Ensure Docker is running and has internet access |
+| **Port already in use** | Change port mapping (e.g., `-p 8081:80`) |
+
+### Getting Help
+
+1. **Check the logs**: `docker logs cpap-tracker`
+2. **Verify environment**: Ensure all required variables are set
+3. **Test Supabase connection**: Visit your Supabase dashboard
+4. **Check GitHub Issues**: [Report bugs here](https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/issues)
 
 ## 🤝 Contributing
 
-1. Fork the repository.  
-2. Create a feature branch (`git checkout -b feature/awesome‑thing`).  
-3. Make your changes, ensuring the UI stays consistent with the shadcn/ui design system.  
-4. Run `npm run lint` and fix any warnings.  
-5. Submit a Pull Request – CI will automatically build the Docker image and run lint checks.
+We welcome contributions! Here's how to get started:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** and test thoroughly
+4. **Run linting**: `pnpm lint`
+5. **Commit your changes**: `git commit -m 'Add amazing feature'`
+6. **Push to your fork**: `git push origin feature/amazing-feature`
+7. **Open a Pull Request**
+
+### Development Guidelines
+
+- Follow the existing code style
+- Add tests for new features
+- Update documentation as needed
+- Ensure all checks pass
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Supabase** - Backend infrastructure
+- **shadcn/ui** - Beautiful UI components
+- **React Team** - Amazing framework
+- **Open Source Community** - For all the great tools
+
+## 📞 Support
+
+- **Documentation**: [GitHub Wiki](https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/wiki)
+- **Issues**: [GitHub Issues](https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/discussions)
 
 ---
 
-## 📌 License
-MIT License – feel free to modify and extend this project for your needs!
+**Made with ❤️ for the CPAP community**
 
-[View the source code on GitHub](https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker.git)
+[![GitHub stars](https://img.shields.io/github/stars/dgreviews40-ctrl/CPAP-Maintenance-Tracker?style=social)](https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker)
+[![GitHub forks](https://img.shields.io/github/forks/dgreviews40-ctrl/CPAP-Maintenance-Tracker?style=social)](https://github.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker)
