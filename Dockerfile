@@ -4,36 +4,24 @@ FROM node:20-slim as builder
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package.json package-lock.json ./
-RUN npm install
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install
 
 # Copy source code and build
 COPY . .
-RUN npm run build
+RUN pnpm run build
 
 # Stage 2: Serve the application using Nginx
-FROM nginx:alpine as runner
+FROM nginx:alpine
 
-# Copy the custom entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Remove the default Nginx config files to avoid conflicts
-RUN rm -f /etc/nginx/conf.d/default.conf
-
-# Copy our Nginx configuration to a temporary location
-# It will be processed by our custom entrypoint script
-COPY nginx.conf /etc/nginx/conf.d/cpap-tracker.conf.template
-
-# Copy the built application files from the builder stage
+# Copy the built application files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Set correct permissions and ownership for Nginx user
-RUN chown -R nginx:nginx /usr/share/nginx/html
-RUN chmod -R 755 /usr/share/nginx/html
+# Copy our simple nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Use our custom entrypoint script
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-
-# Expose port 80 (default Nginx port)
+# Expose port 80
 EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

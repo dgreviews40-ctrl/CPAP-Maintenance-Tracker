@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  # -------------------------------------------------
+  # Front‑end – CPAP Maintenance Tracker
+  # -------------------------------------------------
+  frontend:
+    image: ghcr.io/dgreviews40-ctrl/cpap-tracker:latest
+    container_name: cpap-frontend
+    ports:
+      - "8080:80"               # Expose on host port 8080
+    environment:
+      # 👉 Pass your Supabase credentials here
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    restart: unless-stopped
+    labels:
+      # CasaOS/Portainer/Standard Docker Labels for UI
+      - "casaos.title=CPAP Maintenance Tracker"
+      - "casaos.icon=https://raw.githubusercontent.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/main/public/favicon.ico"
+      - "casaos.webui=http://$$HOSTNAME:8080"
+      - "com.docker.compose.project.name=cpap-tracker"
+      - "com.docker.compose.service=frontend"
+
+volumes:
+  supabase-data:

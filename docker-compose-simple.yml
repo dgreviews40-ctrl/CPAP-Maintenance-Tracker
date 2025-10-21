@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  cpap-tracker:
+    image: nginx:alpine
+    container_name: cpap-tracker
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    restart: unless-stopped
+    labels:
+      - "casaos.title=CPAP Maintenance Tracker"
+      - "casaos.icon=https://raw.githubusercontent.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/main/public/favicon.ico"
+      - "casaos.webui=http://$$HOSTNAME:8080"
+    # This is a temporary solution - you'll need to build the actual image
+    command: |
+      sh -c "
+        echo 'This is a placeholder. You need to build the actual CPAP Tracker image.'
+        echo 'Please use the build instructions in the README.'
+        while true; do sleep 3600; done
+      "

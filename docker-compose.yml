@@ -5,7 +5,7 @@ services:
   # Front‑end – the image we just built
   # -------------------------------------------------
   frontend:
-    image: ghcr.io/dgreviews40-ctrl/cpap-tracker:latest # Tag for the built image
+    build: . # Build from local Dockerfile instead of pulling image
     container_name: cpap-frontend
     ports:
       - "8080:80"               # Expose on host port 8080
