@@ -7,6 +7,29 @@
 
 A comprehensive web application for tracking CPAP machine maintenance, managing parts inventory, and scheduling replacements. Built with modern technologies and designed for both individual users and healthcare providers.
 
+## 📸 Screenshots
+
+### Dashboard Overview
+The main dashboard provides a comprehensive overview of your CPAP maintenance status, including inventory alerts, upcoming tasks, and machine health scoring.
+
+![Dashboard Overview](https://raw.githubusercontent.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/main/screenshots/dashboard-overview.png)
+
+*The dashboard shows inventory reorder alerts, summary statistics (total entries, due soon, overdue tasks), upcoming maintenance items, machine health score, and part type breakdown charts.*
+
+### Maintenance Tracking
+The maintenance section allows you to log new maintenance activities and view your complete maintenance history with filtering and sorting options.
+
+![Maintenance Tracking](https://raw.githubusercontent.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/main/screenshots/maintenance-tracking.png)
+
+*Add new maintenance entries with detailed forms, track maintenance history, and manage upcoming tasks with status indicators and action buttons.*
+
+### Part Inventory Management
+Manage your spare parts inventory with real-time stock levels, reorder alerts, and comprehensive part tracking.
+
+![Part Inventory](https://raw.githubusercontent.com/dgreviews40-ctrl/CPAP-Maintenance-Tracker/main/screenshots/part-inventory.png)
+
+*Track spare parts for various CPAP machines, monitor stock levels, set reorder thresholds, and get alerts when parts need restocking.*
+
 ## ✨ Features
 
 ### 🔐 **User Management**
